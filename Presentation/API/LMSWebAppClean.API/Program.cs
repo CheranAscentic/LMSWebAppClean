@@ -1,41 +1,83 @@
+using LMSWebAppClean.API.Extension;
+using LMSWebAppClean.Application.Interface;
+using LMSWebAppClean.Application.PermissionChecker;
+using LMSWebAppClean.Application.Service;
+using LMSWebAppClean.Domain.Base;
+using LMSWebAppClean.Domain.Model;
+using LMSWebAppClean.Persistence.Context;
+using LMSWebAppClean.Persistence.Repository;
+using LMSWebAppClean.Persistence.UnitOfWork;
+using Microsoft.OpenApi.Models;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+// Add OpenAPI and Swagger services
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Library Management System API",
+        Version = "v1",
+        Description = "A .NET 9 Minimal API for Library Management System"
+    });
+});
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 builder.Services.AddOpenApi();
+
+// Register the DbContext
+builder.Services.AddDbContext<DataDBContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
+
+// Register UnitOfWork
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+// Register repositories required by services
+builder.Services.AddScoped<IRepository<BaseUser>, DatabaseRepository<BaseUser>>();
+builder.Services.AddScoped<IRepository<Book>, DatabaseRepository<Book>>();
+
+// Register application services
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IBookService, BookService>();
+builder.Services.AddScoped<IBorrowingService, BorrowingService>();
+builder.Services.AddScoped<ILoginService, LoginService>();
+builder.Services.AddScoped<IPermissionChecker, PermissionChecker>();
+
+// Register repository services
+builder.Services.AddScoped<IRepository<BaseUser>, DatabaseRepository<BaseUser>>();
+builder.Services.AddScoped<IRepository<Book>, DatabaseRepository<Book>>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "LMS API v1");
+        options.RoutePrefix = string.Empty; // Serves Swagger UI at the app's root
+    });
     app.MapOpenApi();
 }
 
+// Map all endpoints
+app.RegisterAllEndpointGroups();
+
 app.UseHttpsRedirection();
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
-
+app.UseCors("AllowAll");
 app.Run();
 
-internal record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

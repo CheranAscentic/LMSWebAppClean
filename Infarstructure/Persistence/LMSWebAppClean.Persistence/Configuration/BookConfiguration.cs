@@ -9,7 +9,10 @@ namespace LMSWebAppClean.Persistence.Configuration
         public void Configure(EntityTypeBuilder<Book> builder)
         {
             builder.HasKey(b => b.Id);
-            
+
+            builder.Property(b => b.Id)
+                   .ValueGeneratedOnAdd();
+
             builder.Property(b => b.Title)
                 .IsRequired()
                 .HasMaxLength(200);

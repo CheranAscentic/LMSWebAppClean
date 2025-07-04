@@ -1,12 +1,14 @@
-﻿using LMSWebAppClean.Application.DTO;
-using LMSWebAppClean.API.Interface;
+﻿using LMSWebAppClean.API.Interface;
+using LMSWebAppClean.Application.DTO;
 using LMSWebAppClean.Application.Interface;
+using LMSWebAppClean.Application.Usecase.Books.CreateBook;
+using LMSWebAppClean.Application.Usecase.Books.GetAllBooks;
 using LMSWebAppClean.Domain.Model;
+using MediatR;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using LMSWebAppClean.Application.Usecase.Books.GetAllBooks;
 using System.Threading.Tasks;
-using MediatR;
 
 namespace LMSWebAppClean.API.Endpoint
 {
@@ -62,7 +64,7 @@ namespace LMSWebAppClean.API.Endpoint
         {
             if (authId <= 0)
             {
-                return Results.BadRequest("X-User-Id header must be a valid positive integer");
+                return Results.BadRequest("Bearer header must be a valid positive integer");
             }
 
             var query = new GetAllBooksQuery(authId);
@@ -71,13 +73,13 @@ namespace LMSWebAppClean.API.Endpoint
             return Results.Ok(books);
         }
 
-        private IResult HandleGetBookById(int bookId, [FromHeader(Name = "X-User-Id")] int authId, IBookService bookService)
+        private IResult HandleGetBookById(int bookId, [FromHeader(Name = "Bearer")] int authId, IBookService bookService)
         {
             try
             {
                 if (authId <= 0)
                 {
-                    return Results.BadRequest("X-User-Id header must be a valid positive integer");
+                    return Results.BadRequest("Bearer header must be a valid positive integer");
                 }
 
                 var book = bookService.GetBook(authId, bookId);
@@ -89,16 +91,23 @@ namespace LMSWebAppClean.API.Endpoint
             }
         }
 
-        private IResult HandleCreateBook(BookDTO bookDTO, [FromHeader(Name = "X-User-Id")] int authId, IBookService bookService)
+        private async Task<IResult> HandleCreateBook(BookDTO bookDTO, [FromHeader(Name = "Bearer")] int authId, IBookService bookService, IMediator mediator)
         {
             try
             {
                 if (authId <= 0)
                 {
-                    return Results.BadRequest("X-User-Id header must be a valid positive integer");
+                    return Results.BadRequest("Bearer header must be a valid positive integer");
                 }
+                var command = new CreateBookCommand(
+                    authId,
+                    bookDTO.Title,
+                    bookDTO.Author,
+                    bookDTO.Year,
+                    bookDTO.Category
+                );
 
-                var book = bookService.AddBook(authId, bookDTO.Title, bookDTO.Author, bookDTO.Year, bookDTO.Category);
+                var book = await mediator.Send(command);
                 return Results.Created($"/api/books/{book.Id}", book);
             }
             catch (Exception e)
@@ -107,13 +116,13 @@ namespace LMSWebAppClean.API.Endpoint
             }
         }
 
-        private IResult HandleUpdateBookById(int bookId, BookDTO bookDTO, [FromHeader(Name = "X-User-Id")] int authId, IBookService bookService)
+        private IResult HandleUpdateBookById(int bookId, BookDTO bookDTO, [FromHeader(Name = "Bearer")] int authId, IBookService bookService)
         {
             try
             {
                 if (authId <= 0)
                 {
-                    return Results.BadRequest("X-User-Id header must be a valid positive integer");
+                    return Results.BadRequest("Bearer header must be a valid positive integer");
                 }
 
                 var book = bookService.UpdateBook(authId, bookId, bookDTO.Title, bookDTO.Author, bookDTO.Year, bookDTO.Category);
@@ -125,13 +134,13 @@ namespace LMSWebAppClean.API.Endpoint
             }
         }
 
-        private IResult HandleDeleteBookById(int bookId, [FromHeader(Name = "X-User-Id")] int authId, IBookService bookService)
+        private IResult HandleDeleteBookById(int bookId, [FromHeader(Name = "Bearer")] int authId, IBookService bookService)
         {
             try
             {
                 if (authId <= 0)
                 {
-                    return Results.BadRequest("X-User-Id header must be a valid positive integer");
+                    return Results.BadRequest("Bearer header must be a valid positive integer");
                 }
 
                 var book = bookService.RemoveBook(authId, bookId);

@@ -39,14 +39,14 @@ namespace LMSWebAppClean.Domain.Base
 
         public int Id
         {
-            get { return id ?? throw new NullReferenceException(); }
+            get { return id ?? 0; } // Return 0 for new entities, EF will handle the assignment
             set
             {
-                if (value <= 0)
+                if (value < 0)
                 {
-                    throw new Exception("ID must be a positive integer.");
+                    throw new Exception("ID must be a non-negative integer.");
                 }
-                id = value;
+                id = value == 0 ? null : value; // Allow 0 for new entities
             }
         }
 

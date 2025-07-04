@@ -41,13 +41,13 @@ public class BorrowingEndpoint : IEndpointGroup
         .ProducesProblem(StatusCodes.Status400BadRequest);
     }
 
-    private IResult HandleBorrowBook([FromHeader(Name = "X-User-Id")] int authId, BookBorrowDTO borrowDTO, IBorrowingService borrowingService)
+    private IResult HandleBorrowBook([FromHeader(Name = "Bearer")] int authId, BookBorrowDTO borrowDTO, IBorrowingService borrowingService)
     {
         try
         {
             if (authId <= 0)
             {
-                return Results.BadRequest("X-User-Id header must be a valid positive integer");
+                return Results.BadRequest("Bearer header must be a valid positive integer");
             }
 
             var book = borrowingService.BorrowBook(authId, borrowDTO.BookId, borrowDTO.MemberId);
@@ -59,13 +59,13 @@ public class BorrowingEndpoint : IEndpointGroup
         }
     }
 
-    private IResult HandleReturnBook([FromHeader(Name = "X-User-Id")] int authId, BookBorrowDTO borrowDTO, IBorrowingService borrowingService)
+    private IResult HandleReturnBook([FromHeader(Name = "Bearer")] int authId, BookBorrowDTO borrowDTO, IBorrowingService borrowingService)
     {
         try
         {
             if (authId <= 0)
             {
-                return Results.BadRequest("X-User-Id header must be a valid positive integer");
+                return Results.BadRequest("Bearer header must be a valid positive integer");
             }
 
             var book = borrowingService.ReturnBook(authId, borrowDTO.BookId, borrowDTO.MemberId);
@@ -77,13 +77,13 @@ public class BorrowingEndpoint : IEndpointGroup
         }
     }
 
-    private IResult HandleGetBorrowedBooksByMemberId([FromHeader(Name = "X-User-Id")] int authId, int memberId, IBorrowingService borrowingService)
+    private IResult HandleGetBorrowedBooksByMemberId([FromHeader(Name = "Bearer")] int authId, int memberId, IBorrowingService borrowingService)
     {
         try
         {
             if (authId <= 0)
             {
-                return Results.BadRequest("X-User-Id header must be a valid positive integer");
+                return Results.BadRequest("Bearer header must be a valid positive integer");
             }
 
             var books = borrowingService.GetBorrowedBooks(authId, memberId);

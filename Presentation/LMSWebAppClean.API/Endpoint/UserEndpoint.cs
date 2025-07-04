@@ -55,23 +55,23 @@ namespace LMSWebAppClean.API.Endpoint
             .ProducesProblem(StatusCodes.Status404NotFound);
         }
 
-        private IResult HandleGetAllUsers([FromHeader(Name = "X-User-Id")] int authId, IUserService userService)
+        private IResult HandleGetAllUsers([FromHeader(Name = "Bearer")] int authId, IUserService userService)
         {
             if (authId <= 0)
             {
-                return Results.BadRequest("X-User-Id header must be a valid positive integer");
+                return Results.BadRequest("Bearer header must be a valid positive integer");
             }
 
             return Results.Ok(userService.GetAllUsers(authId));
         }
 
-        private IResult HandleGetUserById([FromHeader(Name = "X-User-Id")] int authId, int userId, IUserService userService)
+        private IResult HandleGetUserById([FromHeader(Name = "Bearer")] int authId, int userId, IUserService userService)
         {
             try
             {
                 if (authId <= 0)
                 {
-                    return Results.BadRequest("X-User-Id header must be a valid positive integer");
+                    return Results.BadRequest("Bearer header must be a valid positive integer");
                 }
 
                 var user = userService.GetUser(authId, userId);
@@ -83,13 +83,13 @@ namespace LMSWebAppClean.API.Endpoint
             }
         }
 
-        private IResult HandleCreateUser([FromHeader(Name = "X-User-Id")] int authId, CreateUserDTO createUserDTO, IUserService userService)
+        private IResult HandleCreateUser([FromHeader(Name = "Bearer")] int authId, CreateUserDTO createUserDTO, IUserService userService)
         {
             try
             {
                 if (authId <= 0)
                 {
-                    return Results.BadRequest("X-User-Id header must be a valid positive integer");
+                    return Results.BadRequest("Bearer header must be a valid positive integer");
                 }
 
                 var user = userService.AddUser(authId, createUserDTO.Name, createUserDTO.Type);
@@ -101,13 +101,13 @@ namespace LMSWebAppClean.API.Endpoint
             }
         }
 
-        private IResult HandleUpdateUserById([FromHeader(Name = "X-User-Id")] int authId, int userId, UserDTO userDTO, IUserService userService)
+        private IResult HandleUpdateUserById([FromHeader(Name = "Bearer")] int authId, int userId, UserDTO userDTO, IUserService userService)
         {
             try
             {
                 if (authId <= 0)
                 {
-                    return Results.BadRequest("X-User-Id header must be a valid positive integer");
+                    return Results.BadRequest("Bearer header must be a valid positive integer");
                 }
 
                 var updatedUser = userService.UpdateUser(authId, userId, userDTO.Name, userDTO.Type);
@@ -119,13 +119,13 @@ namespace LMSWebAppClean.API.Endpoint
             }
         }
 
-        private IResult HandleDeleteUserById([FromHeader(Name = "X-User-Id")] int authId, int userId, IUserService userService)
+        private IResult HandleDeleteUserById([FromHeader(Name = "Bearer")] int authId, int userId, IUserService userService)
         {
             try
             {
                 if (authId <= 0)
                 {
-                    return Results.BadRequest("X-User-Id header must be a valid positive integer");
+                    return Results.BadRequest("Bearer header must be a valid positive integer");
                 }
 
                 var user = userService.RemoveUser(authId, userId);

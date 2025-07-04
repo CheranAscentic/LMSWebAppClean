@@ -2,13 +2,14 @@ using LMSWebAppClean.API.Extension;
 using LMSWebAppClean.Application.Interface;
 using LMSWebAppClean.Application.PermissionChecker;
 using LMSWebAppClean.Application.Service;
+using LMSWebAppClean.Application.Usecase.Books.GetAllBooks;
 using LMSWebAppClean.Domain.Base;
 using LMSWebAppClean.Domain.Model;
 using LMSWebAppClean.Persistence.Context;
 using LMSWebAppClean.Persistence.Repository;
 using LMSWebAppClean.Persistence.UnitOfWork;
-using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,9 +57,8 @@ builder.Services.AddScoped<IBorrowingService, BorrowingService>();
 builder.Services.AddScoped<ILoginService, LoginService>();
 builder.Services.AddScoped<IPermissionChecker, PermissionChecker>();
 
-// Register repository services
-builder.Services.AddScoped<IRepository<BaseUser>, DatabaseRepository<BaseUser>>();
-builder.Services.AddScoped<IRepository<Book>, DatabaseRepository<Book>>();
+// Register MediatR
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(GetAllBooksQuery).Assembly));
 
 var app = builder.Build();
 

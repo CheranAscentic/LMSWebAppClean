@@ -1,9 +1,11 @@
 ﻿using LMSWebAppClean.Application.DTO;
 using LMSWebAppClean.API.Interface;
-using LMSWebAppClean.Application.Interface;
-using LMSWebAppClean.Application.Service;
 using LMSWebAppClean.Domain.Base;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using MediatR;
+using LMSWebAppClean.Application.Usecase.Auth.Login;
+using LMSWebAppClean.Application.Usecase.Auth.Register;
 
 namespace LMSWebAppClean.API.Endpoint
 {
@@ -32,29 +34,44 @@ namespace LMSWebAppClean.API.Endpoint
                 .ProducesProblem(StatusCodes.Status400BadRequest);
         }
 
-        private IResult HandleLogin(LoginDTO loginDTO, ILoginService loginService)
+        private async Task<IResult> HandleLogin(LoginDTO loginDTO, IMediator mediator)
         {
             try
             {
-                var user = loginService.Login(loginDTO.UserId);
+                var query = new LoginQuery(loginDTO.UserId);
+                var user = await mediator.Send(query);
+                
                 return Results.Ok(user);
             }
-            catch (Exception e)
+            catch (KeyNotFoundException)
             {
-                return Results.NotFound("User with ID could not be found to login.");
-            }
-        }
-
-        private IResult HandleRegister(CreateUserDTO createUserDTO, ILoginService loginService)
-        {
-            try
-            {
-                var user = loginService.Regsiter(createUserDTO.Name, createUserDTO.Type);
-                return Results.Created($"/api/users/{user.Id}", user);
+                return Results.NotFound($"User with ID {loginDTO.UserId} not found.");
             }
             catch (Exception ex)
             {
-                return Results.BadRequest("User could not be Registered.");
+                return Results.Problem(ex.Message);
+            }
+        }
+
+        private async Task<IResult> HandleRegister(CreateUserDTO createUserDTO, IMediator mediator)
+        {
+            try
+            {
+                var command = new RegisterCommand(
+                    createUserDTO.Name,
+                    createUserDTO.Type
+                );
+                
+                var user = await mediator.Send(command);
+                return Results.Created($"/api/users/{user.Id}", user);
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(ex.Message);
             }
         }
     }

@@ -1,14 +1,13 @@
-﻿using LMSWebAppClean.API.Interface;
-using LMSWebAppClean.Application.DTO;
-using LMSWebAppClean.Application.Interface;
+﻿using LMSWebAppClean.Application.Usecase.Books.GetAllBooks;
+using LMSWebAppClean.Application.Usecase.Books.GetBookById;
 using LMSWebAppClean.Application.Usecase.Books.CreateBook;
-using LMSWebAppClean.Application.Usecase.Books.GetAllBooks;
+using LMSWebAppClean.Application.Usecase.Books.UpdateBook;
+using LMSWebAppClean.Application.Usecase.Books.DeleteBook;
+using LMSWebAppClean.API.Interface;
 using LMSWebAppClean.Domain.Model;
 using MediatR;
-using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.Threading.Tasks;
+using LMSWebAppClean.Application.DTO;
 
 namespace LMSWebAppClean.API.Endpoint
 {
@@ -60,20 +59,7 @@ namespace LMSWebAppClean.API.Endpoint
             .ProducesProblem(StatusCodes.Status404NotFound);
         }
 
-        private async Task<IResult> HandleGetAllBooks([FromHeader(Name = "Bearer")] int authId, IBookService bookService, IMediator mediator)
-        {
-            if (authId <= 0)
-            {
-                return Results.BadRequest("Bearer header must be a valid positive integer");
-            }
-
-            var query = new GetAllBooksQuery(authId);
-            var books = await mediator.Send(query);
-
-            return Results.Ok(books);
-        }
-
-        private IResult HandleGetBookById(int bookId, [FromHeader(Name = "Bearer")] int authId, IBookService bookService)
+        private async Task<IResult> HandleGetAllBooks([FromHeader(Name = "Bearer")] int authId, IMediator mediator)
         {
             try
             {
@@ -82,16 +68,50 @@ namespace LMSWebAppClean.API.Endpoint
                     return Results.BadRequest("Bearer header must be a valid positive integer");
                 }
 
-                var book = bookService.GetBook(authId, bookId);
+                var query = new GetAllBooksQuery(authId);
+                var books = await mediator.Send(query);
+
+                return Results.Ok(books);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Results.Forbid();
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(ex.Message);
+            }
+        }
+
+        private async Task<IResult> HandleGetBookById(int bookId, [FromHeader(Name = "Bearer")] int authId, IMediator mediator)
+        {
+            try
+            {
+                if (authId <= 0)
+                {
+                    return Results.BadRequest("Bearer header must be a valid positive integer");
+                }
+
+                var query = new GetBookByIdQuery(authId, bookId);
+                var book = await mediator.Send(query);
+
                 return Results.Ok(book);
             }
-            catch (Exception e)
+            catch (UnauthorizedAccessException)
             {
-                return Results.NotFound("Book with Id could not be found.");
+                return Results.Forbid();
+            }
+            catch (KeyNotFoundException)
+            {
+                return Results.NotFound($"Book with ID {bookId} not found.");
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(ex.Message);
             }
         }
 
-        private async Task<IResult> HandleCreateBook(BookDTO bookDTO, [FromHeader(Name = "Bearer")] int authId, IBookService bookService, IMediator mediator)
+        private async Task<IResult> HandleCreateBook(BookDTO bookDTO, [FromHeader(Name = "Bearer")] int authId, IMediator mediator)
         {
             try
             {
@@ -99,6 +119,7 @@ namespace LMSWebAppClean.API.Endpoint
                 {
                     return Results.BadRequest("Bearer header must be a valid positive integer");
                 }
+                
                 var command = new CreateBookCommand(
                     authId,
                     bookDTO.Title,
@@ -110,45 +131,84 @@ namespace LMSWebAppClean.API.Endpoint
                 var book = await mediator.Send(command);
                 return Results.Created($"/api/books/{book.Id}", book);
             }
-            catch (Exception e)
+            catch (UnauthorizedAccessException)
             {
-                return Results.NotFound("Book could not be created");
+                return Results.Forbid();
             }
-        }
-
-        private IResult HandleUpdateBookById(int bookId, BookDTO bookDTO, [FromHeader(Name = "Bearer")] int authId, IBookService bookService)
-        {
-            try
+            catch (ArgumentException ex)
             {
-                if (authId <= 0)
-                {
-                    return Results.BadRequest("Bearer header must be a valid positive integer");
-                }
-
-                var book = bookService.UpdateBook(authId, bookId, bookDTO.Title, bookDTO.Author, bookDTO.Year, bookDTO.Category);
-                return Results.Ok(book);
-            }
-            catch (Exception e)
-            {
-                return Results.NotFound("Book with Id could not be updated");
-            }
-        }
-
-        private IResult HandleDeleteBookById(int bookId, [FromHeader(Name = "Bearer")] int authId, IBookService bookService)
-        {
-            try
-            {
-                if (authId <= 0)
-                {
-                    return Results.BadRequest("Bearer header must be a valid positive integer");
-                }
-
-                var book = bookService.RemoveBook(authId, bookId);
-                return Results.NoContent();
+                return Results.BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
-                return Results.NotFound("Book with Id could not be deleted.");
+                return Results.Problem(ex.Message);
+            }
+        }
+
+        private async Task<IResult> HandleUpdateBookById(int bookId, BookDTO bookDTO, [FromHeader(Name = "Bearer")] int authId, IMediator mediator)
+        {
+            try
+            {
+                if (authId <= 0)
+                {
+                    return Results.BadRequest("Bearer header must be a valid positive integer");
+                }
+
+                var command = new UpdateBookCommand(
+                    authId,
+                    bookId,
+                    bookDTO.Title,
+                    bookDTO.Author,
+                    bookDTO.Year,
+                    bookDTO.Category
+                );
+
+                var book = await mediator.Send(command);
+                return Results.Ok(book);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Results.Forbid();
+            }
+            catch (KeyNotFoundException)
+            {
+                return Results.NotFound($"Book with ID {bookId} not found.");
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(ex.Message);
+            }
+        }
+
+        private async Task<IResult> HandleDeleteBookById(int bookId, [FromHeader(Name = "Bearer")] int authId, IMediator mediator)
+        {
+            try
+            {
+                if (authId <= 0)
+                {
+                    return Results.BadRequest("Bearer header must be a valid positive integer");
+                }
+
+                var command = new DeleteBookCommand(authId, bookId);
+                await mediator.Send(command);
+                
+                return Results.NoContent();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Results.Forbid();
+            }
+            catch (KeyNotFoundException)
+            {
+                return Results.NotFound($"Book with ID {bookId} not found.");
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(ex.Message);
             }
         }
     }

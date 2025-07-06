@@ -4,6 +4,12 @@ using LMSWebAppClean.Application.Interface;
 using LMSWebAppClean.Domain.Base;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using MediatR;
+using LMSWebAppClean.Application.Usecase.Users.GetAllUsers;
+using LMSWebAppClean.Application.Usecase.Users.GetUserById;
+using LMSWebAppClean.Application.Usecase.Users.CreateUser;
+using LMSWebAppClean.Application.Usecase.Users.UpdateUser;
+using LMSWebAppClean.Application.Usecase.Users.DeleteUser;
 
 namespace LMSWebAppClean.API.Endpoint
 {

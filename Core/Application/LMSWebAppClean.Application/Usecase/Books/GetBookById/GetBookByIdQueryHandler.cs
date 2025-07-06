@@ -16,11 +16,32 @@ namespace LMSWebAppClean.Application.Usecase.Books.GetBookById
             this.bookRepository = bookRepository;
         }
 
-        public Task<Book> Handle(GetBookByIdQuery request, CancellationToken cancellationToken)
+        public async Task<Book> Handle(GetBookByIdQuery request, CancellationToken cancellationToken)
         {
-            permissionChecker.Check(request.AuthId, Permission.BookView, "User does not have permission to view book.");
-            var book = bookRepository.Get(request.BookId) ?? throw new Exception("Book with Id cannot be found");
-            return Task.FromResult(book);
+            try
+            {
+                permissionChecker.Check(request.AuthId, Permission.BookView, "User does not have permission to view book details.");
+                var book = bookRepository.Get(request.BookId);
+                
+                if (book == null)
+                {
+                    throw new KeyNotFoundException($"Book with ID {request.BookId} was not found.");
+                }
+                
+                return await Task.FromResult(book);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                throw; // Re-throw permission exceptions
+            }
+            catch (KeyNotFoundException)
+            {
+                throw; // Re-throw not found exceptions
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"An error occurred while retrieving book with ID {request.BookId}.", ex);
+            }
         }
     }
 }

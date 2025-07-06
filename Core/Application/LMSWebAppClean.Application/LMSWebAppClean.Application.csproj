@@ -18,9 +18,4 @@
     <ProjectReference Include="..\..\Domain\LMSWebAppClean.Domain\LMSWebAppClean.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Usecase\Books\DeleteBookById\" />
-    <Folder Include="Usecase\Books\UpdateBookById\" />
-  </ItemGroup>
-
 </Project>

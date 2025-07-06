@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace LMSWebAppClean.Application.Usecase.Borrowing.Borrow
 {
-    internal class BorrowCommand: IRequest<Book>, ICommand
+    public class BorrowCommand: IRequest<Book>, ICommand
     {
         public int AuthId { get; set; }
         public int BookId { get; set; }

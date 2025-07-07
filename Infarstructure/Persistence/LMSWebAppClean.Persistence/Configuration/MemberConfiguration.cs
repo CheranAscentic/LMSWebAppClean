@@ -17,9 +17,6 @@ namespace LMSWebAppClean.Persistence.Configuration
             builder.Navigation(m => m.BorrowedBooks)
                 .HasField("borrowedBooks")  // This matches your private field name
                 .UsePropertyAccessMode(PropertyAccessMode.Field);
-                
-            // The relationship is configured in BookConfiguration to avoid conflicts
-            // This ensures EF Core recognizes the relationship from both sides
         }
     }
 }

@@ -21,57 +21,93 @@ namespace LMSWebAppClean.API.Endpoint
             login.MapPost("/", HandleLogin)
                 .WithName("Login")
                 .WithSummary("Authenticate user with Id")
-                .WithDescription("returns a User entity based Id provided, for now same as find user(Temporary implementation).")
-                .Produces<BaseUser>(StatusCodes.Status200OK)
-                .ProducesProblem(StatusCodes.Status404NotFound);
+                .WithDescription("Returns a User entity based on Id provided, for now same as find user (Temporary implementation).")
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status200OK)
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status404NotFound)
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status500InternalServerError);
 
             // Register endpoint
             login.MapPost("/register", HandleRegister)
                 .WithName("Register")
                 .WithSummary("Register a new user")
                 .WithDescription("Registers a new User based on UserDTO")
-                .Produces<BaseUser>(StatusCodes.Status201Created)
-                .ProducesProblem(StatusCodes.Status400BadRequest);
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status201Created)
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status400BadRequest)
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status500InternalServerError);
         }
 
-        private async Task<IResult> HandleLogin(LoginDTO loginDTO, IMediator mediator)
+        private async Task<IResult> HandleLogin([FromBody] StandardRequestObject<LoginDTO> request, [FromServices] IMediator mediator)
         {
             try
             {
-                var query = new LoginQuery(loginDTO.UserId);
+                // Validate request
+                if (request.Data == null)
+                {
+                    var badRequestResponse = StandardResponseObject<BaseUser>.BadRequest(
+                        "Login data is required", 
+                        "Invalid request format");
+                    return Results.BadRequest(badRequestResponse);
+                }
+
+                // Create query from request data
+                var query = new LoginQuery(request.Data.UserId);
                 var user = await mediator.Send(query);
                 
-                return Results.Ok(user);
+                var response = StandardResponseObject<BaseUser>.Ok(user, "Login successful");
+                return Results.Ok(response);
             }
             catch (KeyNotFoundException)
             {
-                return Results.NotFound($"User with ID {loginDTO.UserId} not found.");
+                var notFoundResponse = StandardResponseObject<BaseUser>.NotFound(
+                    $"User with ID {request.Data?.UserId} not found.",
+                    "User not found");
+                return Results.NotFound(notFoundResponse);
             }
             catch (Exception ex)
             {
-                return Results.Problem(ex.Message);
+                var errorResponse = StandardResponseObject<BaseUser>.InternalError(
+                    ex.Message,
+                    "An error occurred during login");
+                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
             }
         }
 
-        private async Task<IResult> HandleRegister(CreateUserDTO createUserDTO, IMediator mediator)
+        private async Task<IResult> HandleRegister([FromBody] StandardRequestObject<CreateUserDTO> request, [FromServices] IMediator mediator)
         {
             try
             {
+                // Validate request
+                if (request.Data == null)
+                {
+                    var badRequestResponse = StandardResponseObject<BaseUser>.BadRequest(
+                        "Registration data is required", 
+                        "Invalid request format");
+                    return Results.BadRequest(badRequestResponse);
+                }
+
+                // Create command from request data
                 var command = new RegisterCommand(
-                    createUserDTO.Name,
-                    createUserDTO.Type
+                    request.Data.Name,
+                    request.Data.Type
                 );
                 
                 var user = await mediator.Send(command);
-                return Results.Created($"/api/users/{user.Id}", user);
+                var response = StandardResponseObject<BaseUser>.Created(user, "User registered successfully");
+                return Results.Created($"/api/users/{user.Id}", response);
             }
             catch (ArgumentException ex)
             {
-                return Results.BadRequest(ex.Message);
+                var badRequestResponse = StandardResponseObject<BaseUser>.BadRequest(
+                    ex.Message,
+                    "Registration failed");
+                return Results.BadRequest(badRequestResponse);
             }
             catch (Exception ex)
             {
-                return Results.Problem(ex.Message);
+                var errorResponse = StandardResponseObject<BaseUser>.InternalError(
+                    ex.Message,
+                    "An error occurred during registration");
+                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
             }
         }
     }

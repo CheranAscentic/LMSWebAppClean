@@ -21,187 +21,288 @@ namespace LMSWebAppClean.API.Endpoint
                 .WithOpenApi();
 
             // Get all users
-            users.MapGet("/", HandleGetAllUsers)
-            .WithName("GetAllUsers")
-            .WithSummary("Get all users")
-            .WithDescription("Returns a list of all users in the system")
-            .Produces<List<BaseUser>>(StatusCodes.Status200OK);
+            users.MapPost("/list", HandleGetAllUsers)
+                .WithName("GetAllUsers")
+                .WithSummary("Get all users")
+                .WithDescription("Returns a list of all users in the system")
+                .Produces<StandardResponseObject<List<BaseUser>>>(StatusCodes.Status200OK)
+                .Produces<StandardResponseObject<List<BaseUser>>>(StatusCodes.Status400BadRequest)
+                .Produces<StandardResponseObject<List<BaseUser>>>(StatusCodes.Status500InternalServerError);
 
             // Get User with Id
-            users.MapGet("/{userId}", HandleGetUserById)
-            .WithName("GetUserById")
-            .WithSummary("Get a user by ID")
-            .WithDescription("Retrieves a specific user by their ID")
-            .Produces<BaseUser>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            users.MapPost("/get", HandleGetUserById)
+                .WithName("GetUserById")
+                .WithSummary("Get a user by ID")
+                .WithDescription("Retrieves a specific user by their ID")
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status200OK)
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status404NotFound)
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status400BadRequest)
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status500InternalServerError);
 
             // Add user with CreateUserDTO
             users.MapPost("/", HandleCreateUser)
-            .WithName("CreateUser")
-            .WithSummary("Create a new user")
-            .WithDescription("Creates a new user with the specified name and type")
-            .Produces<BaseUser>(StatusCodes.Status201Created)
-            .ProducesProblem(StatusCodes.Status400BadRequest);
+                .WithName("CreateUser")
+                .WithSummary("Create a new user")
+                .WithDescription("Creates a new user with the specified name and type")
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status201Created)
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status400BadRequest)
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status500InternalServerError);
 
             // Update user with Id to User
-            users.MapPut("/{userId}", HandleUpdateUserById)
-            .WithName("UpdateUser")
-            .WithSummary("Update a user")
-            .WithDescription("Updates a user's information by their ID")
-            .Produces<BaseUser>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            users.MapPut("/", HandleUpdateUserById)
+                .WithName("UpdateUser")
+                .WithSummary("Update a user")
+                .WithDescription("Updates a user's information by their ID")
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status200OK)
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status404NotFound)
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status400BadRequest)
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status500InternalServerError);
 
             // Delete user with Id
-            users.MapDelete("/{userId}", HandleDeleteUserById)
-            .WithName("DeleteUser")
-            .WithSummary("Delete a user")
-            .WithDescription("Deletes a user by their ID")
-            .Produces(StatusCodes.Status204NoContent)
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            users.MapDelete("/", HandleDeleteUserById)
+                .WithName("DeleteUser")
+                .WithSummary("Delete a user")
+                .WithDescription("Deletes a user by their ID")
+                .Produces<StandardResponseObject<string>>(StatusCodes.Status200OK)
+                .Produces<StandardResponseObject<string>>(StatusCodes.Status404NotFound)
+                .Produces<StandardResponseObject<string>>(StatusCodes.Status400BadRequest)
+                .Produces<StandardResponseObject<string>>(StatusCodes.Status500InternalServerError);
         }
 
-        private async Task<IResult> HandleGetAllUsers([FromHeader(Name = "Bearer")] int authId, [FromServices] IMediator mediator)
+        private async Task<IResult> HandleGetAllUsers([FromBody] StandardRequestObject<EmptyRequestDTO> request, [FromServices] IMediator mediator)
         {
             try
             {
-                if (authId <= 0)
+                if (request.Bearer <= 0)
                 {
-                    return Results.BadRequest("Bearer header must be a valid positive integer");
+                    var badRequestResponse = StandardResponseObject<List<BaseUser>>.BadRequest(
+                        "Bearer token must be a valid positive integer",
+                        "Invalid bearer token");
+                    return Results.BadRequest(badRequestResponse);
                 }
 
-                var query = new GetAllUsersQuery(authId);
+                var query = new GetAllUsersQuery(request.Bearer);
                 var users = await mediator.Send(query);
                 
-                return Results.Ok(users);
+                var response = StandardResponseObject<List<BaseUser>>.Ok(users, "Users retrieved successfully");
+                return Results.Ok(response);
             }
             catch (UnauthorizedAccessException ex)
             {
-                //return Results.Forbid();
-                return Results.Problem(ex.Message);
+                var unauthorizedResponse = StandardResponseObject<List<BaseUser>>.BadRequest(
+                    ex.Message,
+                    "Unauthorized access");
+                return Results.BadRequest(unauthorizedResponse);
             }
             catch (Exception ex)
             {
-                return Results.Problem(ex.Message);
+                var errorResponse = StandardResponseObject<List<BaseUser>>.InternalError(
+                    ex.Message,
+                    "An error occurred while retrieving users");
+                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
             }
         }
 
-        private async Task<IResult> HandleGetUserById([FromHeader(Name = "Bearer")] int authId, int userId, [FromServices] IMediator mediator)
+        private async Task<IResult> HandleGetUserById([FromBody] StandardRequestObject<GetByIdRequestDTO> request, [FromServices] IMediator mediator)
         {
             try
             {
-                if (authId <= 0)
+                if (request.Bearer <= 0)
                 {
-                    return Results.BadRequest("Bearer header must be a valid positive integer");
+                    var badRequestResponse = StandardResponseObject<BaseUser>.BadRequest(
+                        "Bearer token must be a valid positive integer",
+                        "Invalid bearer token");
+                    return Results.BadRequest(badRequestResponse);
                 }
 
-                var query = new GetUserByIdQuery(authId, userId);
+                if (request.Data == null)
+                {
+                    var badRequestResponse = StandardResponseObject<BaseUser>.BadRequest(
+                        "User ID is required",
+                        "Invalid request format");
+                    return Results.BadRequest(badRequestResponse);
+                }
+
+                var query = new GetUserByIdQuery(request.Bearer, request.Data.Id);
                 var user = await mediator.Send(query);
                 
-                return Results.Ok(user);
+                var response = StandardResponseObject<BaseUser>.Ok(user, "User retrieved successfully");
+                return Results.Ok(response);
             }
             catch (UnauthorizedAccessException ex)
             {
-                //return Results.Forbid();
-                return Results.Problem(ex.Message);
+                var unauthorizedResponse = StandardResponseObject<BaseUser>.BadRequest(
+                    ex.Message,
+                    "Unauthorized access");
+                return Results.BadRequest(unauthorizedResponse);
             }
             catch (KeyNotFoundException)
             {
-                return Results.NotFound($"User with ID {userId} not found.");
+                var notFoundResponse = StandardResponseObject<BaseUser>.NotFound(
+                    $"User with ID {request.Data?.Id} not found.",
+                    "User not found");
+                return Results.NotFound(notFoundResponse);
             }
             catch (Exception ex)
             {
-                return Results.Problem(ex.Message);
+                var errorResponse = StandardResponseObject<BaseUser>.InternalError(
+                    ex.Message,
+                    "An error occurred while retrieving the user");
+                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
             }
         }
 
-        private async Task<IResult> HandleCreateUser([FromHeader(Name = "Bearer")] int authId, CreateUserDTO createUserDTO, [FromServices] IMediator mediator)
+        private async Task<IResult> HandleCreateUser([FromBody] StandardRequestObject<CreateUserDTO> request, [FromServices] IMediator mediator)
         {
             try
             {
-                if (authId <= 0)
+                if (request.Bearer <= 0)
                 {
-                    return Results.BadRequest("Bearer header must be a valid positive integer");
+                    var badRequestResponse = StandardResponseObject<BaseUser>.BadRequest(
+                        "Bearer token must be a valid positive integer",
+                        "Invalid bearer token");
+                    return Results.BadRequest(badRequestResponse);
                 }
 
-                var command = new CreateUserCommand(authId, createUserDTO.Name, createUserDTO.Type);
+                if (request.Data == null)
+                {
+                    var badRequestResponse = StandardResponseObject<BaseUser>.BadRequest(
+                        "User data is required",
+                        "Invalid request format");
+                    return Results.BadRequest(badRequestResponse);
+                }
+
+                var command = new CreateUserCommand(request.Bearer, request.Data.Name, request.Data.Type);
                 var user = await mediator.Send(command);
                 
-                return Results.Created($"/api/users/{user.Id}", user);
+                var response = StandardResponseObject<BaseUser>.Created(user, "User created successfully");
+                return Results.Created($"/api/users/{user.Id}", response);
             }
             catch (UnauthorizedAccessException ex)
             {
-                //return Results.Forbid();
-                return Results.Problem(ex.Message);
+                var unauthorizedResponse = StandardResponseObject<BaseUser>.BadRequest(
+                    ex.Message,
+                    "Unauthorized access");
+                return Results.BadRequest(unauthorizedResponse);
             }
             catch (ArgumentException ex)
             {
-                return Results.BadRequest(ex.Message);
+                var badRequestResponse = StandardResponseObject<BaseUser>.BadRequest(
+                    ex.Message,
+                    "User creation failed");
+                return Results.BadRequest(badRequestResponse);
             }
             catch (Exception ex)
             {
-                return Results.Problem(ex.Message);
+                var errorResponse = StandardResponseObject<BaseUser>.InternalError(
+                    ex.Message,
+                    "An error occurred while creating the user");
+                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
             }
         }
 
-        private async Task<IResult> HandleUpdateUserById([FromHeader(Name = "Bearer")] int authId, int userId, UserDTO userDTO, [FromServices] IMediator mediator)
+        private async Task<IResult> HandleUpdateUserById([FromBody] StandardRequestObject<UserUpdateDTO> request, [FromServices] IMediator mediator)
         {
             try
             {
-                if (authId <= 0)
+                if (request.Bearer <= 0)
                 {
-                    return Results.BadRequest("Bearer header must be a valid positive integer");
+                    var badRequestResponse = StandardResponseObject<BaseUser>.BadRequest(
+                        "Bearer token must be a valid positive integer",
+                        "Invalid bearer token");
+                    return Results.BadRequest(badRequestResponse);
                 }
 
-                var command = new UpdateUserCommand(authId, userId, userDTO.Name);
+                if (request.Data == null)
+                {
+                    var badRequestResponse = StandardResponseObject<BaseUser>.BadRequest(
+                        "User update data is required",
+                        "Invalid request format");
+                    return Results.BadRequest(badRequestResponse);
+                }
+
+                var command = new UpdateUserCommand(request.Bearer, request.Data.Id, request.Data.Name);
                 var user = await mediator.Send(command);
                 
-                return Results.Ok(user);
+                var response = StandardResponseObject<BaseUser>.Ok(user, "User updated successfully");
+                return Results.Ok(response);
             }
             catch (UnauthorizedAccessException ex)
             {
-                //return Results.Forbid();
-                return Results.Problem(ex.Message);
+                var unauthorizedResponse = StandardResponseObject<BaseUser>.BadRequest(
+                    ex.Message,
+                    "Unauthorized access");
+                return Results.BadRequest(unauthorizedResponse);
             }
             catch (KeyNotFoundException)
             {
-                return Results.NotFound($"User with ID {userId} not found.");
+                var notFoundResponse = StandardResponseObject<BaseUser>.NotFound(
+                    $"User with ID {request.Data?.Id} not found.",
+                    "User not found");
+                return Results.NotFound(notFoundResponse);
             }
             catch (ArgumentException ex)
             {
-                return Results.BadRequest(ex.Message);
+                var badRequestResponse = StandardResponseObject<BaseUser>.BadRequest(
+                    ex.Message,
+                    "User update failed");
+                return Results.BadRequest(badRequestResponse);
             }
             catch (Exception ex)
             {
-                return Results.Problem(ex.Message);
+                var errorResponse = StandardResponseObject<BaseUser>.InternalError(
+                    ex.Message,
+                    "An error occurred while updating the user");
+                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
             }
         }
 
-        private async Task<IResult> HandleDeleteUserById([FromHeader(Name = "Bearer")] int authId, int userId, [FromServices] IMediator mediator)
+        private async Task<IResult> HandleDeleteUserById([FromBody] StandardRequestObject<GetByIdRequestDTO> request, [FromServices] IMediator mediator)
         {
             try
             {
-                if (authId <= 0)
+                if (request.Bearer <= 0)
                 {
-                    return Results.BadRequest("Bearer header must be a valid positive integer");
+                    var badRequestResponse = StandardResponseObject<string>.BadRequest(
+                        "Bearer token must be a valid positive integer",
+                        "Invalid bearer token");
+                    return Results.BadRequest(badRequestResponse);
                 }
 
-                var command = new DeleteUserCommand(authId, userId);
+                if (request.Data == null)
+                {
+                    var badRequestResponse = StandardResponseObject<string>.BadRequest(
+                        "User ID is required",
+                        "Invalid request format");
+                    return Results.BadRequest(badRequestResponse);
+                }
+
+                var command = new DeleteUserCommand(request.Bearer, request.Data.Id);
                 await mediator.Send(command);
                 
-                return Results.NoContent();
+                var response = StandardResponseObject<string>.Ok("User deleted successfully", "User deleted successfully");
+                return Results.Ok(response);
             }
             catch (UnauthorizedAccessException ex)
             {
-                //return Results.Forbid();
-                return Results.Problem(ex.Message);
+                var unauthorizedResponse = StandardResponseObject<string>.BadRequest(
+                    ex.Message,
+                    "Unauthorized access");
+                return Results.BadRequest(unauthorizedResponse);
             }
             catch (KeyNotFoundException)
             {
-                return Results.NotFound($"User with ID {userId} not found.");
+                var notFoundResponse = StandardResponseObject<string>.NotFound(
+                    $"User with ID {request.Data?.Id} not found.",
+                    "User not found");
+                return Results.NotFound(notFoundResponse);
             }
             catch (Exception ex)
             {
-                return Results.Problem(ex.Message);
+                var errorResponse = StandardResponseObject<string>.InternalError(
+                    ex.Message,
+                    "An error occurred while deleting the user");
+                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
             }
         }
     }

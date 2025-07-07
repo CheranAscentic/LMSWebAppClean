@@ -15,205 +15,306 @@ namespace LMSWebAppClean.API.Endpoint
     {
         public void MapEndpoints(IEndpointRouteBuilder app)
         {
-            // Get All Books
             var books = app.MapGroup("/api/books")
                 .WithTags("Books")
                 .WithOpenApi();
 
-            books.MapGet("/", HandleGetAllBooks)
-            .WithName("GetAllBooks")
-            .WithSummary("Get all books")
-            .WithDescription("Returns a list of all books in the library")
-            .Produces<List<Book>>(StatusCodes.Status200OK);
+            // Get All Books
+            books.MapPost("/list", HandleGetAllBooks)
+                .WithName("GetAllBooks")
+                .WithSummary("Get all books")
+                .WithDescription("Returns a list of all books in the library")
+                .Produces<StandardResponseObject<List<Book>>>(StatusCodes.Status200OK)
+                .Produces<StandardResponseObject<List<Book>>>(StatusCodes.Status400BadRequest)
+                .Produces<StandardResponseObject<List<Book>>>(StatusCodes.Status500InternalServerError);
 
             // Get Book with Id
-            books.MapGet("/{bookId}", HandleGetBookById)
-            .WithName("GetBookById")
-            .WithSummary("Get a book by ID")
-            .WithDescription("Retrieves a specific book by its ID")
-            .Produces<Book>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            books.MapPost("/get", HandleGetBookById)
+                .WithName("GetBookById")
+                .WithSummary("Get a book by ID")
+                .WithDescription("Retrieves a specific book by its ID")
+                .Produces<StandardResponseObject<Book>>(StatusCodes.Status200OK)
+                .Produces<StandardResponseObject<Book>>(StatusCodes.Status404NotFound)
+                .Produces<StandardResponseObject<Book>>(StatusCodes.Status400BadRequest)
+                .Produces<StandardResponseObject<Book>>(StatusCodes.Status500InternalServerError);
 
             // Create Book with BookDTO
             books.MapPost("/", HandleCreateBook)
-            .WithName("CreateBook")
-            .WithSummary("Create a new book")
-            .WithDescription("Adds a new book to the library collection")
-            .Produces<Book>(StatusCodes.Status201Created)
-            .ProducesProblem(StatusCodes.Status400BadRequest);
+                .WithName("CreateBook")
+                .WithSummary("Create a new book")
+                .WithDescription("Adds a new book to the library collection")
+                .Produces<StandardResponseObject<Book>>(StatusCodes.Status201Created)
+                .Produces<StandardResponseObject<Book>>(StatusCodes.Status400BadRequest)
+                .Produces<StandardResponseObject<Book>>(StatusCodes.Status500InternalServerError);
 
             // Update Book with id to BookDTO
-            books.MapPut("/{bookId}", HandleUpdateBookById)
-            .WithName("UpdateBook")
-            .WithSummary("Update a book")
-            .WithDescription("Updates a book's information by its ID")
-            .Produces<Book>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            books.MapPut("/", HandleUpdateBookById)
+                .WithName("UpdateBook")
+                .WithSummary("Update a book")
+                .WithDescription("Updates a book's information by its ID")
+                .Produces<StandardResponseObject<Book>>(StatusCodes.Status200OK)
+                .Produces<StandardResponseObject<Book>>(StatusCodes.Status404NotFound)
+                .Produces<StandardResponseObject<Book>>(StatusCodes.Status400BadRequest)
+                .Produces<StandardResponseObject<Book>>(StatusCodes.Status500InternalServerError);
 
             // Delete Book with Id
-            books.MapDelete("/{bookId}", HandleDeleteBookById)
-            .WithName("DeleteBook")
-            .WithSummary("Delete a book")
-            .WithDescription("Removes a book from the library by its ID")
-            .Produces(StatusCodes.Status204NoContent)
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            books.MapDelete("/", HandleDeleteBookById)
+                .WithName("DeleteBook")
+                .WithSummary("Delete a book")
+                .WithDescription("Removes a book from the library by its ID")
+                .Produces<StandardResponseObject<string>>(StatusCodes.Status200OK)
+                .Produces<StandardResponseObject<string>>(StatusCodes.Status404NotFound)
+                .Produces<StandardResponseObject<string>>(StatusCodes.Status400BadRequest)
+                .Produces<StandardResponseObject<string>>(StatusCodes.Status500InternalServerError);
         }
 
-        private async Task<IResult> HandleGetAllBooks([FromHeader(Name = "Bearer")] int authId, IMediator mediator)
+        private async Task<IResult> HandleGetAllBooks(StandardRequestObject<EmptyRequestDTO> request, IMediator mediator)
         {
             try
             {
-                if (authId <= 0)
+                if (request.Bearer <= 0)
                 {
-                    return Results.BadRequest("Bearer header must be a valid positive integer");
+                    var badRequestResponse = StandardResponseObject<List<Book>>.BadRequest(
+                        "Bearer token must be a valid positive integer",
+                        "Invalid bearer token");
+                    return Results.BadRequest(badRequestResponse);
                 }
 
-                var query = new GetAllBooksQuery(authId);
+                var query = new GetAllBooksQuery(request.Bearer);
                 var books = await mediator.Send(query);
 
-                return Results.Ok(books);
+                var response = StandardResponseObject<List<Book>>.Ok(books, "Books retrieved successfully");
+                return Results.Ok(response);
             }
             catch (UnauthorizedAccessException ex)
             {
-                //return Results.Forbid();
-                return Results.Problem(ex.Message);
+                var unauthorizedResponse = StandardResponseObject<List<Book>>.BadRequest(
+                    ex.Message,
+                    "Unauthorized access");
+                return Results.BadRequest(unauthorizedResponse);
             }
             catch (Exception ex)
             {
-                return Results.Problem(ex.Message);
+                var errorResponse = StandardResponseObject<List<Book>>.InternalError(
+                    ex.Message,
+                    "An error occurred while retrieving books");
+                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
             }
         }
 
-        private async Task<IResult> HandleGetBookById(int bookId, [FromHeader(Name = "Bearer")] int authId, IMediator mediator)
+        private async Task<IResult> HandleGetBookById([FromBody] StandardRequestObject<GetByIdRequestDTO> request, [FromServices] IMediator mediator)
         {
             try
             {
-                if (authId <= 0)
+                if (request.Bearer <= 0)
                 {
-                    return Results.BadRequest("Bearer header must be a valid positive integer");
+                    var badRequestResponse = StandardResponseObject<Book>.BadRequest(
+                        "Bearer token must be a valid positive integer",
+                        "Invalid bearer token");
+                    return Results.BadRequest(badRequestResponse);
                 }
 
-                var query = new GetBookByIdQuery(authId, bookId);
+                if (request.Data == null)
+                {
+                    var badRequestResponse = StandardResponseObject<Book>.BadRequest(
+                        "Book ID is required",
+                        "Invalid request format");
+                    return Results.BadRequest(badRequestResponse);
+                }
+
+                var query = new GetBookByIdQuery(request.Bearer, request.Data.Id);
                 var book = await mediator.Send(query);
 
-                return Results.Ok(book);
+                var response = StandardResponseObject<Book>.Ok(book, "Book retrieved successfully");
+                return Results.Ok(response);
             }
             catch (UnauthorizedAccessException ex)
             {
-                //return Results.Forbid();
-                return Results.Problem(ex.Message);
+                var unauthorizedResponse = StandardResponseObject<Book>.BadRequest(
+                    ex.Message,
+                    "Unauthorized access");
+                return Results.BadRequest(unauthorizedResponse);
             }
             catch (KeyNotFoundException)
             {
-                return Results.NotFound($"Book with ID {bookId} not found.");
+                var notFoundResponse = StandardResponseObject<Book>.NotFound(
+                    $"Book with ID {request.Data?.Id} not found.",
+                    "Book not found");
+                return Results.NotFound(notFoundResponse);
             }
             catch (Exception ex)
             {
-                return Results.Problem(ex.Message);
+                var errorResponse = StandardResponseObject<Book>.InternalError(
+                    ex.Message,
+                    "An error occurred while retrieving the book");
+                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
             }
         }
 
-        private async Task<IResult> HandleCreateBook(BookDTO bookDTO, [FromHeader(Name = "Bearer")] int authId, IMediator mediator)
+        private async Task<IResult> HandleCreateBook([FromBody] StandardRequestObject<BookDTO> request, [FromServices] IMediator mediator)
         {
             try
             {
-                if (authId <= 0)
+                if (request.Bearer <= 0)
                 {
-                    return Results.BadRequest("Bearer header must be a valid positive integer");
+                    var badRequestResponse = StandardResponseObject<Book>.BadRequest(
+                        "Bearer token must be a valid positive integer",
+                        "Invalid bearer token");
+                    return Results.BadRequest(badRequestResponse);
                 }
-                
+
+                if (request.Data == null)
+                {
+                    var badRequestResponse = StandardResponseObject<Book>.BadRequest(
+                        "Book data is required",
+                        "Invalid request format");
+                    return Results.BadRequest(badRequestResponse);
+                }
+
                 var command = new CreateBookCommand(
-                    authId,
-                    bookDTO.Title,
-                    bookDTO.Author,
-                    bookDTO.Year,
-                    bookDTO.Category
+                    request.Bearer,
+                    request.Data.Title,
+                    request.Data.Author,
+                    request.Data.Year,
+                    request.Data.Category
                 );
 
                 var book = await mediator.Send(command);
-                return Results.Created($"/api/books/{book.Id}", book);
+                var response = StandardResponseObject<Book>.Created(book, "Book created successfully");
+                return Results.Created($"/api/books/{book.Id}", response);
             }
             catch (UnauthorizedAccessException ex)
             {
-                //return Results.Forbid();
-                return Results.Problem(ex.Message);
+                var unauthorizedResponse = StandardResponseObject<Book>.BadRequest(
+                    ex.Message,
+                    "Unauthorized access");
+                return Results.BadRequest(unauthorizedResponse);
             }
             catch (ArgumentException ex)
             {
-                return Results.BadRequest(ex.Message);
+                var badRequestResponse = StandardResponseObject<Book>.BadRequest(
+                    ex.Message,
+                    "Book creation failed");
+                return Results.BadRequest(badRequestResponse);
             }
             catch (Exception ex)
             {
-                return Results.Problem(ex.Message);
+                var errorResponse = StandardResponseObject<Book>.InternalError(
+                    ex.Message,
+                    "An error occurred while creating the book");
+                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
             }
         }
 
-        private async Task<IResult> HandleUpdateBookById(int bookId, BookDTO bookDTO, [FromHeader(Name = "Bearer")] int authId, IMediator mediator)
+        private async Task<IResult> HandleUpdateBookById([FromBody] StandardRequestObject<BookUpdateDTO> request, [FromServices] IMediator mediator)
         {
             try
             {
-                if (authId <= 0)
+                if (request.Bearer <= 0)
                 {
-                    return Results.BadRequest("Bearer header must be a valid positive integer");
+                    var badRequestResponse = StandardResponseObject<Book>.BadRequest(
+                        "Bearer token must be a valid positive integer",
+                        "Invalid bearer token");
+                    return Results.BadRequest(badRequestResponse);
+                }
+
+                if (request.Data == null)
+                {
+                    var badRequestResponse = StandardResponseObject<Book>.BadRequest(
+                        "Book update data is required",
+                        "Invalid request format");
+                    return Results.BadRequest(badRequestResponse);
                 }
 
                 var command = new UpdateBookCommand(
-                    authId,
-                    bookId,
-                    bookDTO.Title,
-                    bookDTO.Author,
-                    bookDTO.Year,
-                    bookDTO.Category
+                    request.Bearer,
+                    request.Data.Id,
+                    request.Data.Title,
+                    request.Data.Author,
+                    request.Data.Year,
+                    request.Data.Category
                 );
 
                 var book = await mediator.Send(command);
-                return Results.Ok(book);
+                var response = StandardResponseObject<Book>.Ok(book, "Book updated successfully");
+                return Results.Ok(response);
             }
             catch (UnauthorizedAccessException ex)
             {
-                //return Results.Forbid();
-                return Results.Problem(ex.Message);
+                var unauthorizedResponse = StandardResponseObject<Book>.BadRequest(
+                    ex.Message,
+                    "Unauthorized access");
+                return Results.BadRequest(unauthorizedResponse);
             }
             catch (KeyNotFoundException)
             {
-                return Results.NotFound($"Book with ID {bookId} not found.");
+                var notFoundResponse = StandardResponseObject<Book>.NotFound(
+                    $"Book with ID {request.Data?.Id} not found.",
+                    "Book not found");
+                return Results.NotFound(notFoundResponse);
             }
             catch (ArgumentException ex)
             {
-                return Results.BadRequest(ex.Message);
+                var badRequestResponse = StandardResponseObject<Book>.BadRequest(
+                    ex.Message,
+                    "Book update failed");
+                return Results.BadRequest(badRequestResponse);
             }
             catch (Exception ex)
             {
-                return Results.Problem(ex.Message);
+                var errorResponse = StandardResponseObject<Book>.InternalError(
+                    ex.Message,
+                    "An error occurred while updating the book");
+                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
             }
         }
 
-        private async Task<IResult> HandleDeleteBookById(int bookId, [FromHeader(Name = "Bearer")] int authId, IMediator mediator)
+        private async Task<IResult> HandleDeleteBookById([FromBody] StandardRequestObject<GetByIdRequestDTO> request, [FromServices] IMediator mediator)
         {
             try
             {
-                if (authId <= 0)
+                if (request.Bearer <= 0)
                 {
-                    return Results.BadRequest("Bearer header must be a valid positive integer");
+                    var badRequestResponse = StandardResponseObject<string>.BadRequest(
+                        "Bearer token must be a valid positive integer",
+                        "Invalid bearer token");
+                    return Results.BadRequest(badRequestResponse);
                 }
 
-                var command = new DeleteBookCommand(authId, bookId);
+                if (request.Data == null)
+                {
+                    var badRequestResponse = StandardResponseObject<string>.BadRequest(
+                        "Book ID is required",
+                        "Invalid request format");
+                    return Results.BadRequest(badRequestResponse);
+                }
+
+                var command = new DeleteBookCommand(request.Bearer, request.Data.Id);
                 await mediator.Send(command);
                 
-                return Results.NoContent();
+                var response = StandardResponseObject<string>.Ok("Book deleted successfully", "Book deleted successfully");
+                return Results.Ok(response);
             }
             catch (UnauthorizedAccessException ex)
             {
-                //return Results.Forbid();
-                return Results.Problem(ex.Message);
+                var unauthorizedResponse = StandardResponseObject<string>.BadRequest(
+                    ex.Message,
+                    "Unauthorized access");
+                return Results.BadRequest(unauthorizedResponse);
             }
             catch (KeyNotFoundException)
             {
-                return Results.NotFound($"Book with ID {bookId} not found.");
+                var notFoundResponse = StandardResponseObject<string>.NotFound(
+                    $"Book with ID {request.Data?.Id} not found.",
+                    "Book not found");
+                return Results.NotFound(notFoundResponse);
             }
             catch (Exception ex)
             {
-                return Results.Problem(ex.Message);
+                var errorResponse = StandardResponseObject<string>.InternalError(
+                    ex.Message,
+                    "An error occurred while deleting the book");
+                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
             }
         }
     }

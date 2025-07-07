@@ -13,19 +13,13 @@ namespace LMSWebAppClean.Application.Usecase.Users.UpdateUser
     {
         public int AuthId { get; set; }
         public int UserId { get; set; }
-        public string Username { get; set; }
-        public string Email { get; set; }
-        public string? FullName { get; set; }
-        public string? Role { get; set; }
+        public string? Name { get; set; }
 
-        public UpdateUserCommand(int authId, int userId, string username, string email, string? fullName, string? role)
+        public UpdateUserCommand(int authId, int userId, string? name)
         {
             AuthId = authId;
             UserId = userId;
-            Username = username;
-            Email = email;
-            FullName = fullName;
-            Role = role;
+            Name = name;
         }
     }
 }

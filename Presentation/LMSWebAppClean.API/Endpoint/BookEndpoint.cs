@@ -75,7 +75,8 @@ namespace LMSWebAppClean.API.Endpoint
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Results.Forbid();
+                //return Results.Forbid();
+                return Results.Problem(ex.Message);
             }
             catch (Exception ex)
             {
@@ -97,9 +98,10 @@ namespace LMSWebAppClean.API.Endpoint
 
                 return Results.Ok(book);
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                return Results.Forbid();
+                //return Results.Forbid();
+                return Results.Problem(ex.Message);
             }
             catch (KeyNotFoundException)
             {
@@ -131,9 +133,10 @@ namespace LMSWebAppClean.API.Endpoint
                 var book = await mediator.Send(command);
                 return Results.Created($"/api/books/{book.Id}", book);
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                return Results.Forbid();
+                //return Results.Forbid();
+                return Results.Problem(ex.Message);
             }
             catch (ArgumentException ex)
             {
@@ -166,9 +169,10 @@ namespace LMSWebAppClean.API.Endpoint
                 var book = await mediator.Send(command);
                 return Results.Ok(book);
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                return Results.Forbid();
+                //return Results.Forbid();
+                return Results.Problem(ex.Message);
             }
             catch (KeyNotFoundException)
             {
@@ -198,9 +202,10 @@ namespace LMSWebAppClean.API.Endpoint
                 
                 return Results.NoContent();
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                return Results.Forbid();
+                //return Results.Forbid();
+                return Results.Problem(ex.Message);
             }
             catch (KeyNotFoundException)
             {

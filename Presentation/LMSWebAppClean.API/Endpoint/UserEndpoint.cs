@@ -1,6 +1,5 @@
 ﻿using LMSWebAppClean.Application.DTO;
 using LMSWebAppClean.API.Interface;
-using LMSWebAppClean.Application.Interface;
 using LMSWebAppClean.Domain.Base;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -61,17 +60,7 @@ namespace LMSWebAppClean.API.Endpoint
             .ProducesProblem(StatusCodes.Status404NotFound);
         }
 
-        private IResult HandleGetAllUsers([FromHeader(Name = "Bearer")] int authId, IUserService userService)
-        {
-            if (authId <= 0)
-            {
-                return Results.BadRequest("Bearer header must be a valid positive integer");
-            }
-
-            return Results.Ok(userService.GetAllUsers(authId));
-        }
-
-        private IResult HandleGetUserById([FromHeader(Name = "Bearer")] int authId, int userId, IUserService userService)
+        private async Task<IResult> HandleGetAllUsers([FromHeader(Name = "Bearer")] int authId, [FromServices] IMediator mediator)
         {
             try
             {
@@ -80,16 +69,52 @@ namespace LMSWebAppClean.API.Endpoint
                     return Results.BadRequest("Bearer header must be a valid positive integer");
                 }
 
-                var user = userService.GetUser(authId, userId);
+                var query = new GetAllUsersQuery(authId);
+                var users = await mediator.Send(query);
+                
+                return Results.Ok(users);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                //return Results.Forbid();
+                return Results.Problem(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(ex.Message);
+            }
+        }
+
+        private async Task<IResult> HandleGetUserById([FromHeader(Name = "Bearer")] int authId, int userId, [FromServices] IMediator mediator)
+        {
+            try
+            {
+                if (authId <= 0)
+                {
+                    return Results.BadRequest("Bearer header must be a valid positive integer");
+                }
+
+                var query = new GetUserByIdQuery(authId, userId);
+                var user = await mediator.Send(query);
+                
                 return Results.Ok(user);
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                //return Results.Forbid();
+                return Results.Problem(ex.Message);
+            }
+            catch (KeyNotFoundException)
+            {
+                return Results.NotFound($"User with ID {userId} not found.");
+            }
             catch (Exception ex)
             {
-                return Results.NotFound("User with Id not found.");
+                return Results.Problem(ex.Message);
             }
         }
 
-        private IResult HandleCreateUser([FromHeader(Name = "Bearer")] int authId, CreateUserDTO createUserDTO, IUserService userService)
+        private async Task<IResult> HandleCreateUser([FromHeader(Name = "Bearer")] int authId, CreateUserDTO createUserDTO, [FromServices] IMediator mediator)
         {
             try
             {
@@ -98,16 +123,27 @@ namespace LMSWebAppClean.API.Endpoint
                     return Results.BadRequest("Bearer header must be a valid positive integer");
                 }
 
-                var user = userService.AddUser(authId, createUserDTO.Name, createUserDTO.Type);
+                var command = new CreateUserCommand(authId, createUserDTO.Name, createUserDTO.Type);
+                var user = await mediator.Send(command);
+                
                 return Results.Created($"/api/users/{user.Id}", user);
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                //return Results.Forbid();
+                return Results.Problem(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(ex.Message);
+            }
             catch (Exception ex)
             {
-                return Results.BadRequest("User could not be created.");
+                return Results.Problem(ex.Message);
             }
         }
 
-        private IResult HandleUpdateUserById([FromHeader(Name = "Bearer")] int authId, int userId, UserDTO userDTO, IUserService userService)
+        private async Task<IResult> HandleUpdateUserById([FromHeader(Name = "Bearer")] int authId, int userId, UserDTO userDTO, [FromServices] IMediator mediator)
         {
             try
             {
@@ -116,16 +152,31 @@ namespace LMSWebAppClean.API.Endpoint
                     return Results.BadRequest("Bearer header must be a valid positive integer");
                 }
 
-                var updatedUser = userService.UpdateUser(authId, userId, userDTO.Name, userDTO.Type);
-                return Results.Ok(updatedUser);
+                var command = new UpdateUserCommand(authId, userId, userDTO.Name);
+                var user = await mediator.Send(command);
+                
+                return Results.Ok(user);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                //return Results.Forbid();
+                return Results.Problem(ex.Message);
+            }
+            catch (KeyNotFoundException)
+            {
+                return Results.NotFound($"User with ID {userId} not found.");
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
-                return Results.NotFound("User with Id could not be updated");
+                return Results.Problem(ex.Message);
             }
         }
 
-        private IResult HandleDeleteUserById([FromHeader(Name = "Bearer")] int authId, int userId, IUserService userService)
+        private async Task<IResult> HandleDeleteUserById([FromHeader(Name = "Bearer")] int authId, int userId, [FromServices] IMediator mediator)
         {
             try
             {
@@ -134,12 +185,23 @@ namespace LMSWebAppClean.API.Endpoint
                     return Results.BadRequest("Bearer header must be a valid positive integer");
                 }
 
-                var user = userService.RemoveUser(authId, userId);
+                var command = new DeleteUserCommand(authId, userId);
+                await mediator.Send(command);
+                
                 return Results.NoContent();
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                //return Results.Forbid();
+                return Results.Problem(ex.Message);
+            }
+            catch (KeyNotFoundException)
+            {
+                return Results.NotFound($"User with ID {userId} not found.");
+            }
             catch (Exception ex)
             {
-                return Results.NotFound("User with Id could not be deleted.");
+                return Results.Problem(ex.Message);
             }
         }
     }

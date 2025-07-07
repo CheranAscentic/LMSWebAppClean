@@ -6,7 +6,9 @@ namespace LMSWebAppClean.Application.Interface
     {
         E Add(E entity);
         E Get(int id);
+        E GetWithIncludes(int id, params string[] includes); // New method for loading related data
         List<E> GetAll();
+        List<E> GetAllWithIncludes(params string[] includes); // New method for loading all with related data
         E Remove(int id);
         E Update(E Entity);
     }

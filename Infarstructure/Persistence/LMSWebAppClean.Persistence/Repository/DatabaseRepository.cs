@@ -27,9 +27,37 @@ namespace LMSWebAppClean.Persistence.Repository
             return dbSet.Find(id);
         }
 
+        // New method to load entity with related data
+        public T GetWithIncludes(int id, params string[] includes)
+        {
+            IQueryable<T> query = dbSet;
+            
+            // Add includes for each specified navigation property
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+            
+            return query.FirstOrDefault(e => e.Id == id);
+        }
+
         public List<T> GetAll()
         {
             return dbSet.ToList();
+        }
+
+        // New method to load all entities with related data
+        public List<T> GetAllWithIncludes(params string[] includes)
+        {
+            IQueryable<T> query = dbSet;
+            
+            // Add includes for each specified navigation property
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+            
+            return query.ToList();
         }
 
         public T Remove(int id)

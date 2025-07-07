@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LMSWebAppClean.Persistence.Migrations
 {
     [DbContext(typeof(DataDBContext))]
-    [Migration("20250704063857_EntityAutoIncrementUpdate")]
-    partial class EntityAutoIncrementUpdate
+    [Migration("20250707074918_FixBookMemberRelationship")]
+    partial class FixBookMemberRelationship
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -102,10 +102,12 @@ namespace LMSWebAppClean.Persistence.Migrations
 
             modelBuilder.Entity("LMSWebAppClean.Domain.Model.Book", b =>
                 {
-                    b.HasOne("LMSWebAppClean.Domain.Model.Member", null)
+                    b.HasOne("LMSWebAppClean.Domain.Model.Member", "Member")
                         .WithMany("BorrowedBooks")
                         .HasForeignKey("MemberId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Member");
                 });
 
             modelBuilder.Entity("LMSWebAppClean.Domain.Model.Member", b =>

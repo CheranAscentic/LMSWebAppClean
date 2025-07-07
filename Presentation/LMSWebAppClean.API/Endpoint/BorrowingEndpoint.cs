@@ -57,9 +57,10 @@ namespace LMSWebAppClean.API.Endpoint
                 
                 return Results.Ok(book);
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                return Results.Forbid();
+                //return Results.Forbid();
+                return Results.Problem(ex.Message);
             }
             catch (KeyNotFoundException ex)
             {
@@ -89,9 +90,10 @@ namespace LMSWebAppClean.API.Endpoint
                 
                 return Results.Ok(book);
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                return Results.Forbid();
+                //return Results.Forbid();
+                return Results.Problem(ex.Message);
             }
             catch (KeyNotFoundException ex)
             {
@@ -121,9 +123,10 @@ namespace LMSWebAppClean.API.Endpoint
                 
                 return Results.Ok(books);
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                return Results.Forbid();
+                //return Results.Forbid();
+                return Results.Problem(ex.Message);
             }
             catch (KeyNotFoundException ex)
             {

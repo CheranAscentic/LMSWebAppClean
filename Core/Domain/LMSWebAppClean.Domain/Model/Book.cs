@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace LMSWebAppClean.Domain.Model
@@ -15,6 +16,12 @@ namespace LMSWebAppClean.Domain.Model
         private int? publicationYear;
         private string category;
         public bool Available { get; set; }
+        
+        // Add navigation properties for Member relationship
+        public int? MemberId { get; set; }
+
+        [JsonIgnore]
+        public Member Member { get; set; }
 
         public Book()
         {

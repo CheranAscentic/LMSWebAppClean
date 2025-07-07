@@ -30,17 +30,6 @@ namespace LMSWebAppClean.Application.Usecase.Users.UpdateUser
                 // Check if user has permission to update users
                 permissionChecker.Check(request.AuthId, Permission.UserUpdate, "User does not have permission to update users.");
 
-                // Validate required fields
-                if (string.IsNullOrWhiteSpace(request.Username))
-                {
-                    throw new ArgumentException("Username is required.");
-                }
-
-                /*if (string.IsNullOrWhiteSpace(request.Email))
-                {
-                    throw new ArgumentException("Email is required.");
-                }*/
-
                 // Get existing user
                 var user = userRepository.Get(request.UserId);
                 if (user == null)
@@ -48,18 +37,11 @@ namespace LMSWebAppClean.Application.Usecase.Users.UpdateUser
                     throw new KeyNotFoundException($"User with ID {request.UserId} was not found.");
                 }
 
-                // Update user properties
-                user.Name = request.Username;
-
-                // If the user's role should be updated, update the user type
-                if (!string.IsNullOrEmpty(request.Role))
+                // Update user properties if provided
+                if (!string.IsNullOrWhiteSpace(request.Name))
                 {
-                    UserType userType = DetermineUserType(request.Role);
-                    user.Type = userType;
+                    user.Name = request.Name;
                 }
-
-                // Additional properties would be updated here
-                // Note: Email update might require additional handling
 
                 var updatedUser = userRepository.Update(user);
                 await unitOfWork.SaveChangesAsync();
@@ -82,17 +64,6 @@ namespace LMSWebAppClean.Application.Usecase.Users.UpdateUser
             {
                 throw new Exception($"An error occurred while updating user with ID {request.UserId}.", ex);
             }
-        }
-
-        private UserType DetermineUserType(string role)
-        {
-            return role.ToLower() switch
-            {
-                "staff" => UserType.StaffMinor,
-                "manager" => UserType.StaffManagement,
-                "admin" => UserType.StaffManagement,
-                _ => UserType.Member
-            };
         }
     }
 }

@@ -47,16 +47,17 @@ namespace LMSWebAppClean.Application.Usecase.Borrowing.Borrow
                     throw new InvalidOperationException($"Book with ID {request.BookId} is not available for borrowing");
                 }
 
-                var user = userRepository.Get(request.MemberId);
+                var user = userRepository.GetWithIncludes(request.MemberId, "BorrowedBooks");
                 if (user == null || !(user is Member member))
                 {
                     throw new InvalidOperationException("Only members can borrow books");
                 }
 
-                book.Available = false;
+                // Use the helper method to maintain relationship integrity
+                member.BorrowBook(book);
+                
+                // Update both entities
                 bookRepository.Update(book);
-
-                member.BorrowedBooks.Add(book);
                 userRepository.Update(member);
 
                 await unitOfWork.SaveChangesAsync();
@@ -65,15 +66,15 @@ namespace LMSWebAppClean.Application.Usecase.Borrowing.Borrow
             }
             catch (UnauthorizedAccessException)
             {
-                throw; // Re-throw permission exceptions
+                throw;
             }
             catch (KeyNotFoundException)
             {
-                throw; // Re-throw not found exceptions
+                throw;
             }
             catch (InvalidOperationException)
             {
-                throw; // Re-throw business rule violations
+                throw;
             }
             catch (Exception ex)
             {

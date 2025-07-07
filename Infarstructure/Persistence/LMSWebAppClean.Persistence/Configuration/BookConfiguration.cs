@@ -18,21 +18,33 @@ namespace LMSWebAppClean.Persistence.Configuration
                 .HasMaxLength(200);
                 
             builder.Property(b => b.Author)
-                .HasMaxLength(100);
+                .HasMaxLength(100)
+                .IsRequired();
                 
             builder.Property(b => b.Category)
                 .IsRequired()
                 .HasMaxLength(50);
                 
             builder.Property(b => b.Available)
-                .IsRequired();
+                .IsRequired()
+                .HasDefaultValue(true);
+
+            builder.Property(b => b.PublicationYear)
+                .IsRequired(false);
                 
-            // Configure the relationship with Member (a book can be borrowed by only one Member)
-            builder.HasOne<Member>()
+            // Configure the one-to-many relationship: Member -> Books
+            builder.HasOne(b => b.Member)
                 .WithMany(m => m.BorrowedBooks)
-                .HasForeignKey("MemberId")
+                .HasForeignKey(b => b.MemberId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // Add index for better query performance
+            builder.HasIndex(b => b.MemberId)
+                .HasDatabaseName("IX_Books_MemberId");
+
+            builder.HasIndex(b => b.Available)
+                .HasDatabaseName("IX_Books_Available");
         }
     }
 }

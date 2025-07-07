@@ -9,14 +9,17 @@ namespace LMSWebAppClean.Persistence.Configuration
     {
         public void Configure(EntityTypeBuilder<Member> builder)
         {
-            // Configure to use separate table
+            // Configure to use separate table with Table-per-Type (TPT) inheritance
             builder.ToTable("Members");
             
-            // Configure one-to-many relationship with Books
-            builder.HasMany(m => m.BorrowedBooks)
-                .WithOne()
-                .HasForeignKey("MemberId")
-                .OnDelete(DeleteBehavior.SetNull);
+            // Configure the backing field for BorrowedBooks collection
+            // Updated to match the new field name in Member class
+            builder.Navigation(m => m.BorrowedBooks)
+                .HasField("borrowedBooks")  // This matches your private field name
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+                
+            // The relationship is configured in BookConfiguration to avoid conflicts
+            // This ensures EF Core recognizes the relationship from both sides
         }
     }
 }

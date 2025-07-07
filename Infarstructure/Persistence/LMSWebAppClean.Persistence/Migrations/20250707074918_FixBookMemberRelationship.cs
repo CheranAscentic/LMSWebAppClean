@@ -5,7 +5,7 @@
 namespace LMSWebAppClean.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class EntityAutoIncrementUpdate : Migration
+    public partial class FixBookMemberRelationship : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -65,11 +65,11 @@ namespace LMSWebAppClean.Persistence.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Available = table.Column<bool>(type: "bit", nullable: false),
+                    MemberId = table.Column<int>(type: "int", nullable: true),
                     Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Author = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     PublicationYear = table.Column<int>(type: "int", nullable: true),
-                    Category = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    MemberId = table.Column<int>(type: "int", nullable: true)
+                    Category = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false)
                 },
                 constraints: table =>
                 {

@@ -37,6 +37,16 @@ namespace LMSWebAppClean.Persistence.Repository
             return _dbSet.ToList();
         }
 
+        public List<T> GetAllWithIncludes(params string[] includes)
+        {
+            throw new NotImplementedException();
+        }
+
+        public T GetWithIncludes(int id, params string[] includes)
+        {
+            throw new NotImplementedException();
+        }
+
         // Removes an entity by id and returns the removed entity
         public T Remove(int id)
         {

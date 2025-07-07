@@ -25,7 +25,8 @@ namespace LMSWebAppClean.Application.Usecase.Borrowing.GetBorrowedBooks
             {
                 permissionChecker.Check(request.AuthId, Permission.BorrowViewBorrowedBooks, "You do not have permission to view borrowed books");
                 
-                var user = userRepository.Get(request.MemberId);
+                // Load member with their borrowed books to ensure the collection is populated
+                var user = userRepository.GetWithIncludes(request.MemberId, "BorrowedBooks");
                 if (user == null || !(user is Member member))
                 {
                     throw new KeyNotFoundException($"Member with ID {request.MemberId} not found");

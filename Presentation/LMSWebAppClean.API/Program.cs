@@ -51,14 +51,15 @@ builder.Services.AddScoped<IRepository<BaseUser>, DatabaseRepository<BaseUser>>(
 builder.Services.AddScoped<IRepository<Book>, DatabaseRepository<Book>>();
 
 // Register application services
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IBookService, BookService>();
-builder.Services.AddScoped<IBorrowingService, BorrowingService>();
-builder.Services.AddScoped<ILoginService, LoginService>();
+//builder.Services.AddScoped<IUserService, UserService>();
+//builder.Services.AddScoped<IBookService, BookService>();
+//builder.Services.AddScoped<IBorrowingService, BorrowingService>();
+//builder.Services.AddScoped<ILoginService, LoginService>();
 builder.Services.AddScoped<IPermissionChecker, PermissionChecker>();
 
-// Register MediatR
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(GetAllBooksQuery).Assembly));
+// Register MediatR : IDK why this works, but it does.
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(typeof(GetAllBooksQuery).Assembly));
 
 var app = builder.Build();
 

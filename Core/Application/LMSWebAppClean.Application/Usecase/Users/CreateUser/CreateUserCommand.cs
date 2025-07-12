@@ -13,15 +13,17 @@ namespace LMSWebAppClean.Application.Usecase.Users.CreateUser
 {
     public class CreateUserCommand : IRequest<BaseUser>, ICommand
     {
-        public int AuthId { get; set; }
         public string Name { get; set; }
-        public UserType Type { get; set; }
+        public string Type { get; set; }
+        public string Email { get; set; } = string.Empty;
+        public int? Id { get; set; } // Optional ID field
 
-        public CreateUserCommand(int authId, string? fullName, UserType type)
+        public CreateUserCommand(string? fullName, string type, string? email, int? id = null)
         {
-            AuthId = authId;
             Name = fullName;
             Type = type;
+            Email = email;
+            Id = id;
         }
     }
 }

@@ -13,9 +13,17 @@ namespace LMSWebAppClean.API.Extension
 
             foreach (var type in endpointGroupTypes)
             {
-                if (Activator.CreateInstance(type) is IEndpointGroup group)
+                try
                 {
-                    group.MapEndpoints(app);
+                    if (Activator.CreateInstance(type) is IEndpointGroup group)
+                    {
+                        group.MapEndpoints(app);
+                    }
+                }
+                catch (Exception)
+                {
+                    // Silently continue if endpoint registration fails
+                    // In production, you might want to use proper logging instead
                 }
             }
         }

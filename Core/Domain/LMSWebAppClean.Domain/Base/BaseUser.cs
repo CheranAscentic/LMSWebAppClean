@@ -14,13 +14,14 @@ namespace LMSWebAppClean.Domain.Base
 
     public abstract class BaseUser : IEntity
     {
-        protected UserType type;
+        protected string type;
         private string name;
         private int? id;
+        private string? email;
 
         protected BaseUser() { }
 
-        public BaseUser(string name, UserType userType)
+        public BaseUser(string name, string userType)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Type = userType;
@@ -50,10 +51,21 @@ namespace LMSWebAppClean.Domain.Base
             }
         }
 
-        public abstract UserType Type
+        public abstract string Type
         {
             get;
             set;
+        }
+
+        public string Email
+        {
+            get => email;
+            set
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                    throw new ArgumentException("Email cannot be empty.");
+                email = value;
+            }
         }
     }
 }

@@ -25,14 +25,10 @@ namespace LMSWebAppClean.Application.Usecase.Users.GetAllUsers
             try
             {
                 // Check if user has permission to view all users
-                permissionChecker.Check(request.AuthId, Permission.UserViewAll, "User does not have permission to view all users.");
+                //permissionChecker.Check(request.AuthId, Permission.UserViewAll, "User does not have permission to view all users.");
 
                 // Get all users
                 return userRepository.GetAll();
-            }
-            catch (UnauthorizedAccessException)
-            {
-                throw; // Re-throw permission exceptions
             }
             catch (Exception ex)
             {

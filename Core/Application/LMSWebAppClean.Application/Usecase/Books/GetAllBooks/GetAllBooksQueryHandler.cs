@@ -20,13 +20,9 @@ namespace LMSWebAppClean.Application.Usecase.Books.GetAllBooks
         {
             try
             {
-                permissionChecker.Check(request.AuthId, Permission.BookViewAll, "User does not have permission to view all books.");
+                //permissionChecker.Check(request.AuthId, Permission.BookViewAll, "User does not have permission to view all books.");
                 var books = bookRepository.GetAll();
                 return await Task.FromResult(books);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                throw; // Re-throw permission exceptions
             }
             catch (Exception ex)
             {

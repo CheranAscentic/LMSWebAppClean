@@ -9,13 +9,11 @@ namespace LMSWebAppClean.Application.Usecase.Users.CreateUser
 {
     public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, BaseUser>
     {
-        private readonly IPermissionChecker permissionChecker;
         private readonly IRepository<BaseUser> userRepository;
         private readonly IUnitOfWork unitOfWork;
 
-        public CreateUserCommandHandler(IPermissionChecker permissionChecker, IRepository<BaseUser> userRepository, IUnitOfWork unitOfWork)
+        public CreateUserCommandHandler(IRepository<BaseUser> userRepository, IUnitOfWork unitOfWork)
         {
-            this.permissionChecker = permissionChecker;
             this.userRepository = userRepository;
             this.unitOfWork = unitOfWork;
         }
@@ -24,9 +22,6 @@ namespace LMSWebAppClean.Application.Usecase.Users.CreateUser
         {
             try
             {
-                // Check if user has permission to create users
-                permissionChecker.Check(request.AuthId, Permission.UserAdd, "User does not have permission to create users.");
-
                 // Create new user (implementation depends on how BaseUser is instantiated)
                 BaseUser user = request.Type switch
                 {
@@ -37,14 +32,18 @@ namespace LMSWebAppClean.Application.Usecase.Users.CreateUser
                     _ => throw new ArgumentException("Invalid user type"),
                 };
 
+                user.Email = request.Email;
+
+                // Set the ID if provided, otherwise let the database auto-generate it
+                if (request.Id.HasValue)
+                {
+                    user.Id = request.Id.Value;
+                }
+
                 var createdUser = userRepository.Add(user);
                 await unitOfWork.SaveChangesAsync();
 
                 return createdUser;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                throw; // Re-throw permission exceptions
             }
             catch (ArgumentException)
             {

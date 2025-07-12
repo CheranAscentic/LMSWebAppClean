@@ -12,11 +12,6 @@ namespace LMSWebAppClean.Application.Usecase.Users.GetAllUsers
 {
     public class GetAllUsersQuery : IRequest<List<BaseUser>>, IQuery
     {
-        public int AuthId { get; set; }
-
-        public GetAllUsersQuery(int authId)
-        {
-            AuthId = authId;
-        }
+        public GetAllUsersQuery() {}
     }
 }

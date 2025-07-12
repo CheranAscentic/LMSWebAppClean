@@ -1,25 +1,21 @@
-using LMSWebAppClean.Persistence.Context;
 using LMSWebAppClean.Application.Interface;
-using LMSWebAppClean.Persistence.Repository;
 using LMSWebAppClean.Domain.Base;
 using LMSWebAppClean.Domain.Model;
+using LMSWebAppClean.Persistence.Context;
+using LMSWebAppClean.Persistence.Repository;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace LMSWebAppClean.Persistence.UnitOfWork
 {
     public class UnitOfWork : IUnitOfWork
     {
-        private readonly DataDBContext context;
+        private readonly DbContext context;
         private IDbContextTransaction? transaction;
 
-        /*public IRepository<Book> Books { get; }
-        public IRepository<BaseUser> Users { get; }*/
-
-        public UnitOfWork(DataDBContext context/*, IRepository<Book> books, IRepository<BaseUser> users*/)
+        public UnitOfWork(DbContext context)
         {
             this.context = context ?? throw new ArgumentNullException(nameof(context));
-            /*this.Books = books ?? throw new ArgumentNullException(nameof(books));
-            this.Users = users ?? throw new ArgumentNullException(nameof(users));*/
         }
 
         public async Task<int> SaveChangesAsync()

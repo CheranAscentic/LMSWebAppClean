@@ -11,7 +11,9 @@ namespace LMSWebAppClean.Application.Usecase.Auth.Register
         private readonly IRepository<BaseUser> userRepository;
         private readonly IUnitOfWork unitOfWork;
 
-        public RegisterCommandHandler(IRepository<BaseUser> userRepository, IUnitOfWork unitOfWork)
+        public RegisterCommandHandler(
+            IRepository<BaseUser> userRepository, 
+            IUnitOfWork unitOfWork)
         {
             this.userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             this.unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));

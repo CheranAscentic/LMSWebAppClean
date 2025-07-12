@@ -1,6 +1,7 @@
 ﻿using LMSWebAppClean.Application.DTO;
 using LMSWebAppClean.API.Interface;
 using LMSWebAppClean.Domain.Base;
+using LMSWebAppClean.Application.Interface;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
@@ -9,6 +10,7 @@ using LMSWebAppClean.Application.Usecase.Users.GetUserById;
 using LMSWebAppClean.Application.Usecase.Users.CreateUser;
 using LMSWebAppClean.Application.Usecase.Users.UpdateUser;
 using LMSWebAppClean.Application.Usecase.Users.DeleteUser;
+using LMSWebAppClean.Domain.Enum;
 
 namespace LMSWebAppClean.API.Endpoint
 {
@@ -20,79 +22,101 @@ namespace LMSWebAppClean.API.Endpoint
                 .WithTags("Users")
                 .WithOpenApi();
 
-            // Get all users
+            // Get all users - Requires staff permissions
             users.MapPost("/list", HandleGetAllUsers)
                 .WithName("GetAllUsers")
+                .RequireAuthorization()
                 .WithSummary("Get all users")
-                .WithDescription("Returns a list of all users in the system")
+                .WithDescription("Returns a list of all users in the system. Requires staff permissions.")
                 .Produces<StandardResponseObject<List<BaseUser>>>(StatusCodes.Status200OK)
                 .Produces<StandardResponseObject<List<BaseUser>>>(StatusCodes.Status400BadRequest)
+                .Produces<StandardResponseObject<List<BaseUser>>>(StatusCodes.Status401Unauthorized)
+                .Produces<StandardResponseObject<List<BaseUser>>>(StatusCodes.Status403Forbidden)
                 .Produces<StandardResponseObject<List<BaseUser>>>(StatusCodes.Status500InternalServerError);
 
-            // Get User with Id
+            // Get User with Id - Requires authentication (self or staff permissions)
             users.MapPost("/get", HandleGetUserById)
                 .WithName("GetUserById")
+                .RequireAuthorization()
                 .WithSummary("Get a user by ID")
-                .WithDescription("Retrieves a specific user by their ID")
+                .WithDescription("Retrieves a specific user by their ID. Users can view their own profile, staff can view any user. Requires authentication.")
                 .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status200OK)
                 .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status404NotFound)
                 .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status400BadRequest)
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status401Unauthorized)
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status403Forbidden)
                 .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status500InternalServerError);
 
-            // Add user with CreateUserDTO
+            // Add user - Requires staff permissions
             users.MapPost("/", HandleCreateUser)
                 .WithName("CreateUser")
+                .RequireAuthorization()
                 .WithSummary("Create a new user")
-                .WithDescription("Creates a new user with the specified name and type")
+                .WithDescription("Creates a new user with the specified name and type. Requires staff permissions.")
                 .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status201Created)
                 .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status400BadRequest)
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status401Unauthorized)
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status403Forbidden)
                 .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status500InternalServerError);
 
-            // Update user with Id to User
+            // Update user - Requires authentication (self or staff permissions)
             users.MapPut("/", HandleUpdateUserById)
                 .WithName("UpdateUser")
+                .RequireAuthorization()
                 .WithSummary("Update a user")
-                .WithDescription("Updates a user's information by their ID")
+                .WithDescription("Updates a user's information by their ID. Users can update their own profile, staff can update any user. Requires authentication.")
                 .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status200OK)
                 .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status404NotFound)
                 .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status400BadRequest)
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status401Unauthorized)
+                .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status403Forbidden)
                 .Produces<StandardResponseObject<BaseUser>>(StatusCodes.Status500InternalServerError);
 
-            // Delete user with Id
+            // Delete user - Requires staff permissions
             users.MapDelete("/", HandleDeleteUserById)
                 .WithName("DeleteUser")
+                .RequireAuthorization()
                 .WithSummary("Delete a user")
-                .WithDescription("Deletes a user by their ID")
+                .WithDescription("Deletes a user by their ID. Requires staff permissions.")
                 .Produces<StandardResponseObject<string>>(StatusCodes.Status200OK)
                 .Produces<StandardResponseObject<string>>(StatusCodes.Status404NotFound)
                 .Produces<StandardResponseObject<string>>(StatusCodes.Status400BadRequest)
+                .Produces<StandardResponseObject<string>>(StatusCodes.Status401Unauthorized)
+                .Produces<StandardResponseObject<string>>(StatusCodes.Status403Forbidden)
                 .Produces<StandardResponseObject<string>>(StatusCodes.Status500InternalServerError);
         }
 
-        private async Task<IResult> HandleGetAllUsers([FromBody] StandardRequestObject<EmptyRequestDTO> request, [FromServices] IMediator mediator)
+        private async Task<IResult> HandleGetAllUsers(
+            [FromBody] StandardRequestObject<GetAllUsersQuery> request, 
+            [FromServices] IMediator mediator,
+            [FromServices] ICurrentUserService currentUserService,
+            [FromServices] IPermissionChecker permissionChecker)
         {
             try
             {
-                if (request.Bearer <= 0)
+                // Check permission at endpoint level
+                var currentUserId = currentUserService.DomainUserId;
+                if (!currentUserId.HasValue)
                 {
-                    var badRequestResponse = StandardResponseObject<List<BaseUser>>.BadRequest(
-                        "Bearer token must be a valid positive integer",
-                        "Invalid bearer token");
-                    return Results.BadRequest(badRequestResponse);
+                    return Results.Unauthorized();
                 }
 
-                var query = new GetAllUsersQuery(request.Bearer);
-                var users = await mediator.Send(query);
-                
+                // Check if user has permission to view all users
+                permissionChecker.Check(
+                    currentUserId.Value, 
+                    Permission.Process.GetAllUsers, 
+                    "You don't have permission to view all users.");
+
+                var users = await mediator.Send(request.Data);
                 var response = StandardResponseObject<List<BaseUser>>.Ok(users, "Users retrieved successfully");
                 return Results.Ok(response);
             }
             catch (UnauthorizedAccessException ex)
             {
-                var unauthorizedResponse = StandardResponseObject<List<BaseUser>>.BadRequest(
+                var forbiddenResponse = StandardResponseObject<List<BaseUser>>.BadRequest(
                     ex.Message,
-                    "Unauthorized access");
-                return Results.BadRequest(unauthorizedResponse);
+                    "Insufficient permissions");
+                return Results.StatusCode(403); // Forbidden
             }
             catch (Exception ex)
             {
@@ -103,43 +127,43 @@ namespace LMSWebAppClean.API.Endpoint
             }
         }
 
-        private async Task<IResult> HandleGetUserById([FromBody] StandardRequestObject<GetByIdRequestDTO> request, [FromServices] IMediator mediator)
+        private async Task<IResult> HandleGetUserById(
+            [FromBody] StandardRequestObject<GetUserByIdQuery> request, 
+            [FromServices] IMediator mediator,
+            [FromServices] ICurrentUserService currentUserService,
+            [FromServices] IPermissionChecker permissionChecker)
         {
             try
             {
-                if (request.Bearer <= 0)
+                // Check permission at endpoint level
+                var currentUserId = currentUserService.DomainUserId;
+                if (!currentUserId.HasValue)
                 {
-                    var badRequestResponse = StandardResponseObject<BaseUser>.BadRequest(
-                        "Bearer token must be a valid positive integer",
-                        "Invalid bearer token");
-                    return Results.BadRequest(badRequestResponse);
+                    return Results.Unauthorized();
                 }
 
-                if (request.Data == null)
-                {
-                    var badRequestResponse = StandardResponseObject<BaseUser>.BadRequest(
-                        "User ID is required",
-                        "Invalid request format");
-                    return Results.BadRequest(badRequestResponse);
-                }
+                // Check self or process permission for viewing user
+                permissionChecker.Check(
+                    currentUserId.Value,
+                    request.Data.UserId,
+                    Permission.Self.GetUserById,    // Self permission
+                    Permission.Process.GetUserById); // Process permission
 
-                var query = new GetUserByIdQuery(request.Bearer, request.Data.Id);
-                var user = await mediator.Send(query);
-                
+                var user = await mediator.Send(request.Data);
                 var response = StandardResponseObject<BaseUser>.Ok(user, "User retrieved successfully");
                 return Results.Ok(response);
             }
             catch (UnauthorizedAccessException ex)
             {
-                var unauthorizedResponse = StandardResponseObject<BaseUser>.BadRequest(
+                var forbiddenResponse = StandardResponseObject<BaseUser>.BadRequest(
                     ex.Message,
-                    "Unauthorized access");
-                return Results.BadRequest(unauthorizedResponse);
+                    "Insufficient permissions");
+                return Results.StatusCode(403); // Forbidden
             }
             catch (KeyNotFoundException)
             {
                 var notFoundResponse = StandardResponseObject<BaseUser>.NotFound(
-                    $"User with ID {request.Data?.Id} not found.",
+                    $"User not found.",
                     "User not found");
                 return Results.NotFound(notFoundResponse);
             }
@@ -152,38 +176,37 @@ namespace LMSWebAppClean.API.Endpoint
             }
         }
 
-        private async Task<IResult> HandleCreateUser([FromBody] StandardRequestObject<CreateUserDTO> request, [FromServices] IMediator mediator)
+        private async Task<IResult> HandleCreateUser(
+            [FromBody] StandardRequestObject<CreateUserCommand> request, 
+            [FromServices] IMediator mediator,
+            [FromServices] ICurrentUserService currentUserService,
+            [FromServices] IPermissionChecker permissionChecker)
         {
             try
             {
-                if (request.Bearer <= 0)
+                // Check permission at endpoint level
+                var currentUserId = currentUserService.DomainUserId;
+                if (!currentUserId.HasValue)
                 {
-                    var badRequestResponse = StandardResponseObject<BaseUser>.BadRequest(
-                        "Bearer token must be a valid positive integer",
-                        "Invalid bearer token");
-                    return Results.BadRequest(badRequestResponse);
+                    return Results.Unauthorized();
                 }
 
-                if (request.Data == null)
-                {
-                    var badRequestResponse = StandardResponseObject<BaseUser>.BadRequest(
-                        "User data is required",
-                        "Invalid request format");
-                    return Results.BadRequest(badRequestResponse);
-                }
+                // Check if user has permission to create users
+                permissionChecker.Check(
+                    currentUserId.Value, 
+                    Permission.Process.CreateUser, 
+                    "You don't have permission to create users.");
 
-                var command = new CreateUserCommand(request.Bearer, request.Data.Name, request.Data.Type);
-                var user = await mediator.Send(command);
-                
+                var user = await mediator.Send(request.Data);
                 var response = StandardResponseObject<BaseUser>.Created(user, "User created successfully");
                 return Results.Created($"/api/users/{user.Id}", response);
             }
             catch (UnauthorizedAccessException ex)
             {
-                var unauthorizedResponse = StandardResponseObject<BaseUser>.BadRequest(
+                var forbiddenResponse = StandardResponseObject<BaseUser>.BadRequest(
                     ex.Message,
-                    "Unauthorized access");
-                return Results.BadRequest(unauthorizedResponse);
+                    "Insufficient permissions");
+                return Results.StatusCode(403); // Forbidden
             }
             catch (ArgumentException ex)
             {
@@ -201,43 +224,43 @@ namespace LMSWebAppClean.API.Endpoint
             }
         }
 
-        private async Task<IResult> HandleUpdateUserById([FromBody] StandardRequestObject<UserUpdateDTO> request, [FromServices] IMediator mediator)
+        private async Task<IResult> HandleUpdateUserById(
+            [FromBody] StandardRequestObject<UpdateUserCommand> request, 
+            [FromServices] IMediator mediator,
+            [FromServices] ICurrentUserService currentUserService,
+            [FromServices] IPermissionChecker permissionChecker)
         {
             try
             {
-                if (request.Bearer <= 0)
+                // Check permission at endpoint level
+                var currentUserId = currentUserService.DomainUserId;
+                if (!currentUserId.HasValue)
                 {
-                    var badRequestResponse = StandardResponseObject<BaseUser>.BadRequest(
-                        "Bearer token must be a valid positive integer",
-                        "Invalid bearer token");
-                    return Results.BadRequest(badRequestResponse);
+                    return Results.Unauthorized();
                 }
 
-                if (request.Data == null)
-                {
-                    var badRequestResponse = StandardResponseObject<BaseUser>.BadRequest(
-                        "User update data is required",
-                        "Invalid request format");
-                    return Results.BadRequest(badRequestResponse);
-                }
+                // Check self or process permission for updating user
+                permissionChecker.Check(
+                    currentUserId.Value,
+                    request.Data.UserId,
+                    Permission.Self.UpdateUser,     // Self permission
+                    Permission.Process.UpdateUser); // Process permission
 
-                var command = new UpdateUserCommand(request.Bearer, request.Data.Id, request.Data.Name);
-                var user = await mediator.Send(command);
-                
+                var user = await mediator.Send(request.Data);
                 var response = StandardResponseObject<BaseUser>.Ok(user, "User updated successfully");
                 return Results.Ok(response);
             }
             catch (UnauthorizedAccessException ex)
             {
-                var unauthorizedResponse = StandardResponseObject<BaseUser>.BadRequest(
+                var forbiddenResponse = StandardResponseObject<BaseUser>.BadRequest(
                     ex.Message,
-                    "Unauthorized access");
-                return Results.BadRequest(unauthorizedResponse);
+                    "Insufficient permissions");
+                return Results.StatusCode(403); // Forbidden
             }
             catch (KeyNotFoundException)
             {
                 var notFoundResponse = StandardResponseObject<BaseUser>.NotFound(
-                    $"User with ID {request.Data?.Id} not found.",
+                    $"User not found.",
                     "User not found");
                 return Results.NotFound(notFoundResponse);
             }
@@ -257,43 +280,42 @@ namespace LMSWebAppClean.API.Endpoint
             }
         }
 
-        private async Task<IResult> HandleDeleteUserById([FromBody] StandardRequestObject<GetByIdRequestDTO> request, [FromServices] IMediator mediator)
+        private async Task<IResult> HandleDeleteUserById(
+            [FromBody] StandardRequestObject<DeleteUserCommand> request, 
+            [FromServices] IMediator mediator,
+            [FromServices] ICurrentUserService currentUserService,
+            [FromServices] IPermissionChecker permissionChecker)
         {
             try
             {
-                if (request.Bearer <= 0)
+                // Check permission at endpoint level
+                var currentUserId = currentUserService.DomainUserId;
+                if (!currentUserId.HasValue)
                 {
-                    var badRequestResponse = StandardResponseObject<string>.BadRequest(
-                        "Bearer token must be a valid positive integer",
-                        "Invalid bearer token");
-                    return Results.BadRequest(badRequestResponse);
+                    return Results.Unauthorized();
                 }
 
-                if (request.Data == null)
-                {
-                    var badRequestResponse = StandardResponseObject<string>.BadRequest(
-                        "User ID is required",
-                        "Invalid request format");
-                    return Results.BadRequest(badRequestResponse);
-                }
+                // Check if user has permission to delete users
+                permissionChecker.Check(
+                    currentUserId.Value, 
+                    Permission.Process.DeleteUser, 
+                    "You don't have permission to delete users.");
 
-                var command = new DeleteUserCommand(request.Bearer, request.Data.Id);
-                await mediator.Send(command);
-                
+                await mediator.Send(request.Data);
                 var response = StandardResponseObject<string>.Ok("User deleted successfully", "User deleted successfully");
                 return Results.Ok(response);
             }
             catch (UnauthorizedAccessException ex)
             {
-                var unauthorizedResponse = StandardResponseObject<string>.BadRequest(
+                var forbiddenResponse = StandardResponseObject<string>.BadRequest(
                     ex.Message,
-                    "Unauthorized access");
-                return Results.BadRequest(unauthorizedResponse);
+                    "Insufficient permissions");
+                return Results.StatusCode(403); // Forbidden
             }
             catch (KeyNotFoundException)
             {
                 var notFoundResponse = StandardResponseObject<string>.NotFound(
-                    $"User with ID {request.Data?.Id} not found.",
+                    $"User not found.",
                     "User not found");
                 return Results.NotFound(notFoundResponse);
             }

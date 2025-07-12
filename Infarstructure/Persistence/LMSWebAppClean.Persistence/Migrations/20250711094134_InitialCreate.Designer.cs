@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LMSWebAppClean.Persistence.Migrations
 {
     [DbContext(typeof(DataDBContext))]
-    [Migration("20250707074918_FixBookMemberRelationship")]
-    partial class FixBookMemberRelationship
+    [Migration("20250711094134_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -32,13 +32,20 @@ namespace LMSWebAppClean.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
 
@@ -61,7 +68,9 @@ namespace LMSWebAppClean.Persistence.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<bool>("Available")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("Category")
                         .IsRequired()
@@ -81,7 +90,11 @@ namespace LMSWebAppClean.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MemberId");
+                    b.HasIndex("Available")
+                        .HasDatabaseName("IX_Books_Available");
+
+                    b.HasIndex("MemberId")
+                        .HasDatabaseName("IX_Books_MemberId");
 
                     b.ToTable("Books");
                 });

@@ -22,10 +22,6 @@ namespace LMSWebAppClean.Application.Usecase.Books.UpdateBook
         {
             try
             {
-                // Check if user has permission to update books
-                permissionChecker.Check(request.AuthId, Permission.BookUpdate, "User does not have permission to update books.");
-
-                // Validate required fields
                 if (string.IsNullOrWhiteSpace(request.Title))
                 {
                     throw new ArgumentException("Title is required.");

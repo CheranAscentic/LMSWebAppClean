@@ -1,13 +1,24 @@
 using LMSWebAppClean.Domain.Base;
-using LMSWebAppClean.Domain.Enum;
-using LMSWebAppClean.Domain.Model;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="BaseUserConfiguration.cs" company="Ascentic">
+//   Copyright (c) Ascentic. All rights reserved.
+// </copyright>
+// <summary>
+//   EntityTypeConfiguration for BaseUser.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace LMSWebAppClean.Persistence.Configuration
 {
+    /// <summary>
+    /// EntityTypeConfiguration for BaseUser.
+    /// </summary>
     public class BaseUserConfiguration : IEntityTypeConfiguration<BaseUser>
     {
+        /// <inheritdoc />
         public void Configure(EntityTypeBuilder<BaseUser> builder)
         {
             builder.HasKey(u => u.Id);
@@ -18,7 +29,15 @@ namespace LMSWebAppClean.Persistence.Configuration
             builder.Property(u => u.Name)
                 .IsRequired()
                 .HasMaxLength(100);
-            
+
+            builder.Property(u => u.Email)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            builder.Property(u => u.Type)
+                .IsRequired()
+                .HasMaxLength(50);
+
             builder.UseTptMappingStrategy();
 
             builder.ToTable("Users");

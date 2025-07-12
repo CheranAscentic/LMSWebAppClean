@@ -1,6 +1,8 @@
-﻿namespace LMSWebAppClean.Application.DTO
+﻿using LMSWebAppClean.Application.Interface;
+
+namespace LMSWebAppClean.Application.DTO
 {
-    public class BookBorrowDTO
+    public class BookBorrowDTO : ICommand
     {
         public int MemberId { get; set; }
         public int BookId { get; set; }

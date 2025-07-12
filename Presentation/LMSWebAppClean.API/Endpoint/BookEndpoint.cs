@@ -5,9 +5,11 @@ using LMSWebAppClean.Application.Usecase.Books.UpdateBook;
 using LMSWebAppClean.Application.Usecase.Books.DeleteBook;
 using LMSWebAppClean.API.Interface;
 using LMSWebAppClean.Domain.Model;
+using LMSWebAppClean.Application.Interface;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using LMSWebAppClean.Application.DTO;
+using LMSWebAppClean.Domain.Enum;
 
 namespace LMSWebAppClean.API.Endpoint
 {
@@ -19,7 +21,7 @@ namespace LMSWebAppClean.API.Endpoint
                 .WithTags("Books")
                 .WithOpenApi();
 
-            // Get All Books
+            // Get All Books - Public endpoint (no permission check needed)
             books.MapPost("/list", HandleGetAllBooks)
                 .WithName("GetAllBooks")
                 .WithSummary("Get all books")
@@ -28,7 +30,7 @@ namespace LMSWebAppClean.API.Endpoint
                 .Produces<StandardResponseObject<List<Book>>>(StatusCodes.Status400BadRequest)
                 .Produces<StandardResponseObject<List<Book>>>(StatusCodes.Status500InternalServerError);
 
-            // Get Book with Id
+            // Get Book with Id - Public endpoint (no permission check needed)
             books.MapPost("/get", HandleGetBookById)
                 .WithName("GetBookById")
                 .WithSummary("Get a book by ID")
@@ -38,60 +40,55 @@ namespace LMSWebAppClean.API.Endpoint
                 .Produces<StandardResponseObject<Book>>(StatusCodes.Status400BadRequest)
                 .Produces<StandardResponseObject<Book>>(StatusCodes.Status500InternalServerError);
 
-            // Create Book with BookDTO
+                // Create Book - Requires Staff Permission
             books.MapPost("/", HandleCreateBook)
                 .WithName("CreateBook")
+                .RequireAuthorization()
                 .WithSummary("Create a new book")
-                .WithDescription("Adds a new book to the library collection")
+                .WithDescription("Adds a new book to the library collection. Requires staff permissions.")
                 .Produces<StandardResponseObject<Book>>(StatusCodes.Status201Created)
                 .Produces<StandardResponseObject<Book>>(StatusCodes.Status400BadRequest)
+                .Produces<StandardResponseObject<Book>>(StatusCodes.Status401Unauthorized)
+                .Produces<StandardResponseObject<Book>>(StatusCodes.Status403Forbidden)
                 .Produces<StandardResponseObject<Book>>(StatusCodes.Status500InternalServerError);
 
-            // Update Book with id to BookDTO
+            // Update Book - Requires Staff Permission
             books.MapPut("/", HandleUpdateBookById)
                 .WithName("UpdateBook")
+                .RequireAuthorization()
                 .WithSummary("Update a book")
-                .WithDescription("Updates a book's information by its ID")
+                .WithDescription("Updates a book's information by its ID. Requires staff permissions.")
                 .Produces<StandardResponseObject<Book>>(StatusCodes.Status200OK)
                 .Produces<StandardResponseObject<Book>>(StatusCodes.Status404NotFound)
                 .Produces<StandardResponseObject<Book>>(StatusCodes.Status400BadRequest)
+                .Produces<StandardResponseObject<Book>>(StatusCodes.Status401Unauthorized)
+                .Produces<StandardResponseObject<Book>>(StatusCodes.Status403Forbidden)
                 .Produces<StandardResponseObject<Book>>(StatusCodes.Status500InternalServerError);
 
-            // Delete Book with Id
+            // Delete Book - Requires Staff Permission
             books.MapDelete("/", HandleDeleteBookById)
                 .WithName("DeleteBook")
+                .RequireAuthorization()
                 .WithSummary("Delete a book")
-                .WithDescription("Removes a book from the library by its ID")
+                .WithDescription("Removes a book from the library by its ID. Requires staff permissions.")
                 .Produces<StandardResponseObject<string>>(StatusCodes.Status200OK)
                 .Produces<StandardResponseObject<string>>(StatusCodes.Status404NotFound)
                 .Produces<StandardResponseObject<string>>(StatusCodes.Status400BadRequest)
+                .Produces<StandardResponseObject<string>>(StatusCodes.Status401Unauthorized)
+                .Produces<StandardResponseObject<string>>(StatusCodes.Status403Forbidden)
                 .Produces<StandardResponseObject<string>>(StatusCodes.Status500InternalServerError);
         }
 
-        private async Task<IResult> HandleGetAllBooks(StandardRequestObject<EmptyRequestDTO> request, IMediator mediator)
+        private async Task<IResult> HandleGetAllBooks(
+            StandardRequestObject<GetAllBooksQuery> request, 
+            IMediator mediator)
         {
             try
             {
-                if (request.Bearer <= 0)
-                {
-                    var badRequestResponse = StandardResponseObject<List<Book>>.BadRequest(
-                        "Bearer token must be a valid positive integer",
-                        "Invalid bearer token");
-                    return Results.BadRequest(badRequestResponse);
-                }
-
-                var query = new GetAllBooksQuery(request.Bearer);
-                var books = await mediator.Send(query);
-
+                // No permission check needed - public endpoint
+                var books = await mediator.Send(request.Data);
                 var response = StandardResponseObject<List<Book>>.Ok(books, "Books retrieved successfully");
                 return Results.Ok(response);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                var unauthorizedResponse = StandardResponseObject<List<Book>>.BadRequest(
-                    ex.Message,
-                    "Unauthorized access");
-                return Results.BadRequest(unauthorizedResponse);
             }
             catch (Exception ex)
             {
@@ -102,43 +99,21 @@ namespace LMSWebAppClean.API.Endpoint
             }
         }
 
-        private async Task<IResult> HandleGetBookById([FromBody] StandardRequestObject<GetByIdRequestDTO> request, [FromServices] IMediator mediator)
+        private async Task<IResult> HandleGetBookById(
+            [FromBody] StandardRequestObject<GetBookByIdQuery> request, 
+            [FromServices] IMediator mediator)
         {
             try
             {
-                if (request.Bearer <= 0)
-                {
-                    var badRequestResponse = StandardResponseObject<Book>.BadRequest(
-                        "Bearer token must be a valid positive integer",
-                        "Invalid bearer token");
-                    return Results.BadRequest(badRequestResponse);
-                }
-
-                if (request.Data == null)
-                {
-                    var badRequestResponse = StandardResponseObject<Book>.BadRequest(
-                        "Book ID is required",
-                        "Invalid request format");
-                    return Results.BadRequest(badRequestResponse);
-                }
-
-                var query = new GetBookByIdQuery(request.Bearer, request.Data.Id);
-                var book = await mediator.Send(query);
-
+                // No permission check needed - public endpoint
+                var book = await mediator.Send(request.Data);
                 var response = StandardResponseObject<Book>.Ok(book, "Book retrieved successfully");
                 return Results.Ok(response);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                var unauthorizedResponse = StandardResponseObject<Book>.BadRequest(
-                    ex.Message,
-                    "Unauthorized access");
-                return Results.BadRequest(unauthorizedResponse);
             }
             catch (KeyNotFoundException)
             {
                 var notFoundResponse = StandardResponseObject<Book>.NotFound(
-                    $"Book with ID {request.Data?.Id} not found.",
+                    $"Book not found.",
                     "Book not found");
                 return Results.NotFound(notFoundResponse);
             }
@@ -151,44 +126,40 @@ namespace LMSWebAppClean.API.Endpoint
             }
         }
 
-        private async Task<IResult> HandleCreateBook([FromBody] StandardRequestObject<BookDTO> request, [FromServices] IMediator mediator)
+        private async Task<IResult> HandleCreateBook(
+            [FromBody] StandardRequestObject<CreateBookCommand> request, 
+            [FromServices] IMediator mediator,
+            [FromServices] ICurrentUserService currentUserService,
+            [FromServices] IPermissionChecker permissionChecker)
         {
             try
             {
-                if (request.Bearer <= 0)
+                // Check permission at endpoint level
+                var currentUserId = currentUserService.DomainUserId;
+                if (!currentUserId.HasValue)
                 {
-                    var badRequestResponse = StandardResponseObject<Book>.BadRequest(
-                        "Bearer token must be a valid positive integer",
-                        "Invalid bearer token");
-                    return Results.BadRequest(badRequestResponse);
+                    var unauthorizedResponse = StandardResponseObject<Book>.BadRequest(
+                        "User is not authenticated.",
+                        "Authentication required");
+                    return Results.Unauthorized();
                 }
 
-                if (request.Data == null)
-                {
-                    var badRequestResponse = StandardResponseObject<Book>.BadRequest(
-                        "Book data is required",
-                        "Invalid request format");
-                    return Results.BadRequest(badRequestResponse);
-                }
+                // Check if user has permission to create books
+                permissionChecker.Check(
+                    currentUserId.Value, 
+                    Permission.Process.CreateBook, 
+                    "You don't have permission to create books.");
 
-                var command = new CreateBookCommand(
-                    request.Bearer,
-                    request.Data.Title,
-                    request.Data.Author,
-                    request.Data.Year,
-                    request.Data.Category
-                );
-
-                var book = await mediator.Send(command);
+                var book = await mediator.Send(request.Data);
                 var response = StandardResponseObject<Book>.Created(book, "Book created successfully");
                 return Results.Created($"/api/books/{book.Id}", response);
             }
             catch (UnauthorizedAccessException ex)
             {
-                var unauthorizedResponse = StandardResponseObject<Book>.BadRequest(
+                var forbiddenResponse = StandardResponseObject<Book>.BadRequest(
                     ex.Message,
-                    "Unauthorized access");
-                return Results.BadRequest(unauthorizedResponse);
+                    "Insufficient permissions");
+                return Results.StatusCode(403); // Forbidden
             }
             catch (ArgumentException ex)
             {
@@ -206,50 +177,42 @@ namespace LMSWebAppClean.API.Endpoint
             }
         }
 
-        private async Task<IResult> HandleUpdateBookById([FromBody] StandardRequestObject<BookUpdateDTO> request, [FromServices] IMediator mediator)
+        private async Task<IResult> HandleUpdateBookById(
+            [FromBody] StandardRequestObject<UpdateBookCommand> request, 
+            [FromServices] IMediator mediator,
+            [FromServices] ICurrentUserService currentUserService,
+            [FromServices] IPermissionChecker permissionChecker)
         {
             try
             {
-                if (request.Bearer <= 0)
+                // Check permission at endpoint level
+                var currentUserId = currentUserService.DomainUserId;
+                if (!currentUserId.HasValue)
                 {
-                    var badRequestResponse = StandardResponseObject<Book>.BadRequest(
-                        "Bearer token must be a valid positive integer",
-                        "Invalid bearer token");
-                    return Results.BadRequest(badRequestResponse);
+                    return Results.Unauthorized();
                 }
 
-                if (request.Data == null)
-                {
-                    var badRequestResponse = StandardResponseObject<Book>.BadRequest(
-                        "Book update data is required",
-                        "Invalid request format");
-                    return Results.BadRequest(badRequestResponse);
-                }
+                // Check if user has permission to update books
+                permissionChecker.Check(
+                    currentUserId.Value, 
+                    Permission.Process.UpdateBook, 
+                    "You don't have permission to update books.");
 
-                var command = new UpdateBookCommand(
-                    request.Bearer,
-                    request.Data.Id,
-                    request.Data.Title,
-                    request.Data.Author,
-                    request.Data.Year,
-                    request.Data.Category
-                );
-
-                var book = await mediator.Send(command);
+                var book = await mediator.Send(request.Data);
                 var response = StandardResponseObject<Book>.Ok(book, "Book updated successfully");
                 return Results.Ok(response);
             }
             catch (UnauthorizedAccessException ex)
             {
-                var unauthorizedResponse = StandardResponseObject<Book>.BadRequest(
+                var forbiddenResponse = StandardResponseObject<Book>.BadRequest(
                     ex.Message,
-                    "Unauthorized access");
-                return Results.BadRequest(unauthorizedResponse);
+                    "Insufficient permissions");
+                return Results.StatusCode(403); // Forbidden
             }
             catch (KeyNotFoundException)
             {
                 var notFoundResponse = StandardResponseObject<Book>.NotFound(
-                    $"Book with ID {request.Data?.Id} not found.",
+                    $"Book not found.",
                     "Book not found");
                 return Results.NotFound(notFoundResponse);
             }
@@ -269,43 +232,42 @@ namespace LMSWebAppClean.API.Endpoint
             }
         }
 
-        private async Task<IResult> HandleDeleteBookById([FromBody] StandardRequestObject<GetByIdRequestDTO> request, [FromServices] IMediator mediator)
+        private async Task<IResult> HandleDeleteBookById(
+            [FromBody] StandardRequestObject<DeleteBookCommand> request, 
+            [FromServices] IMediator mediator,
+            [FromServices] ICurrentUserService currentUserService,
+            [FromServices] IPermissionChecker permissionChecker)
         {
             try
             {
-                if (request.Bearer <= 0)
+                // Check permission at endpoint level
+                var currentUserId = currentUserService.DomainUserId;
+                if (!currentUserId.HasValue)
                 {
-                    var badRequestResponse = StandardResponseObject<string>.BadRequest(
-                        "Bearer token must be a valid positive integer",
-                        "Invalid bearer token");
-                    return Results.BadRequest(badRequestResponse);
+                    return Results.Unauthorized();
                 }
 
-                if (request.Data == null)
-                {
-                    var badRequestResponse = StandardResponseObject<string>.BadRequest(
-                        "Book ID is required",
-                        "Invalid request format");
-                    return Results.BadRequest(badRequestResponse);
-                }
+                // Check if user has permission to delete books
+                permissionChecker.Check(
+                    currentUserId.Value, 
+                    Permission.Process.DeleteBook, 
+                    "You don't have permission to delete books.");
 
-                var command = new DeleteBookCommand(request.Bearer, request.Data.Id);
-                await mediator.Send(command);
-                
+                await mediator.Send(request.Data);
                 var response = StandardResponseObject<string>.Ok("Book deleted successfully", "Book deleted successfully");
                 return Results.Ok(response);
             }
             catch (UnauthorizedAccessException ex)
             {
-                var unauthorizedResponse = StandardResponseObject<string>.BadRequest(
+                var forbiddenResponse = StandardResponseObject<string>.BadRequest(
                     ex.Message,
-                    "Unauthorized access");
-                return Results.BadRequest(unauthorizedResponse);
+                    "Insufficient permissions");
+                return Results.StatusCode(403); // Forbidden
             }
             catch (KeyNotFoundException)
             {
                 var notFoundResponse = StandardResponseObject<string>.NotFound(
-                    $"Book with ID {request.Data?.Id} not found.",
+                    $"Book not found.",
                     "Book not found");
                 return Results.NotFound(notFoundResponse);
             }

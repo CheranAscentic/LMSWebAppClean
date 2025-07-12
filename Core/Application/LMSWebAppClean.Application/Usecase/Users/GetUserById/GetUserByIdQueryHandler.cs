@@ -25,7 +25,7 @@ namespace LMSWebAppClean.Application.Usecase.Users.GetUserById
             try
             {
                 // Check if user has permission to view user
-                permissionChecker.Check(request.AuthId, Permission.UserView, "User does not have permission to view user details.");
+                //permissionChecker.Check(request.AuthId, Permission.UserView, "User does not have permission to view user details.");
 
                 // Get user by id
                 var user = userRepository.Get(request.UserId);
@@ -35,10 +35,6 @@ namespace LMSWebAppClean.Application.Usecase.Users.GetUserById
                 }
 
                 return user;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                throw; // Re-throw permission exceptions
             }
             catch (KeyNotFoundException)
             {

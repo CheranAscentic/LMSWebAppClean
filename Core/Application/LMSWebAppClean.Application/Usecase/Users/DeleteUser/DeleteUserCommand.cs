@@ -12,12 +12,10 @@ namespace LMSWebAppClean.Application.Usecase.Users.DeleteUser
 {
     public class DeleteUserCommand : IRequest<BaseUser>, ICommand
     {
-        public int AuthId { get; set; }
         public int UserId { get; set; }
 
-        public DeleteUserCommand(int authId, int userId)
+        public DeleteUserCommand(int userId)
         {
-            AuthId = authId;
             UserId = userId;
         }
     }

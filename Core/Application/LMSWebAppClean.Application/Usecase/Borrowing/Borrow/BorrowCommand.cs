@@ -11,13 +11,11 @@ namespace LMSWebAppClean.Application.Usecase.Borrowing.Borrow
 {
     public class BorrowCommand: IRequest<Book>, ICommand
     {
-        public int AuthId { get; set; }
         public int BookId { get; set; }
         public int MemberId { get; set; }
 
-        public BorrowCommand(int authId, int bookId, int memberId)
+        public BorrowCommand(int bookId, int memberId)
         {
-            AuthId = authId;
             BookId = bookId;
             MemberId = memberId;
         }

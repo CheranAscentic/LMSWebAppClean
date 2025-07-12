@@ -2,9 +2,6 @@
 using LMSWebAppClean.Domain.Enum;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace LMSWebAppClean.Domain.Model
 {
@@ -28,7 +25,7 @@ namespace LMSWebAppClean.Domain.Model
             borrowedBooks = new List<Book>();
         }
 
-        public override UserType Type
+        public override string Type
         {
             get { return type; }
             set
@@ -46,7 +43,7 @@ namespace LMSWebAppClean.Domain.Model
         {
             if (book == null) throw new ArgumentNullException(nameof(book));
             if (book.Member != null) throw new InvalidOperationException("Book is already borrowed by another member.");
-            
+
             book.Member = this;
             book.MemberId = this.Id;
             book.Available = false;
@@ -57,7 +54,7 @@ namespace LMSWebAppClean.Domain.Model
         {
             if (book == null) throw new ArgumentNullException(nameof(book));
             if (book.Member != this) throw new InvalidOperationException("This book is not borrowed by this member.");
-            
+
             book.Member = null;
             book.MemberId = null;
             book.Available = true;

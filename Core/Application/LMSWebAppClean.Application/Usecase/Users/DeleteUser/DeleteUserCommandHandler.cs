@@ -27,7 +27,7 @@ namespace LMSWebAppClean.Application.Usecase.Users.DeleteUser
             try
             {
                 // Check if user has permission to delete users
-                permissionChecker.Check(request.AuthId, Permission.UserDelete, "User does not have permission to delete users.");
+                //permissionChecker.Check(request.AuthId, Permission.UserDelete, "User does not have permission to delete users.");
 
                 // Remove user
                 var user = userRepository.Remove(request.UserId);
@@ -39,10 +39,6 @@ namespace LMSWebAppClean.Application.Usecase.Users.DeleteUser
                 await unitOfWork.SaveChangesAsync();
 
                 return user;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                throw; // Re-throw permission exceptions
             }
             catch (KeyNotFoundException)
             {

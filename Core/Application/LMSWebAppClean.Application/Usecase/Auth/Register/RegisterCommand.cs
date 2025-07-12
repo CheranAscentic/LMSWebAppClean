@@ -15,10 +15,17 @@ namespace LMSWebAppClean.Application.Usecase.Auth.Register
         public string Name { get; set; }
         public UserType Type { get; set; }
 
-        public RegisterCommand(string name, UserType type)
+        public string Email { get; set; }
+
+        public string Password { get; set; }
+
+
+        public RegisterCommand(string name, UserType type, string email, string password)
         {
             Name = name;
             Type = type;
+            Email = email;
+            Password = password;
         }
     }
 }

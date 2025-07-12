@@ -23,7 +23,7 @@ namespace LMSWebAppClean.Application.Usecase.Books.DeleteBook
             try
             {
                 // Check if user has permission to delete books
-                permissionChecker.Check(request.AuthId, Permission.BookDelete, "User does not have permission to delete books.");
+                //permissionChecker.Check(request.AuthId, Permission.BookDelete, "User does not have permission to delete books.");
 
                 var deletedBook = bookRepository.Remove(request.BookId);
                 
@@ -35,10 +35,6 @@ namespace LMSWebAppClean.Application.Usecase.Books.DeleteBook
                 await unitOfWork.SaveChangesAsync();
 
                 return deletedBook;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                throw; // Re-throw permission exceptions
             }
             catch (KeyNotFoundException)
             {

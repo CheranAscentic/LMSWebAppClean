@@ -1,24 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using LMSWebAppClean.Application.Interface;
 
 namespace LMSWebAppClean.Application.DTO
 {
-    public class StandardRequestObject<T> where T : class
+    public class StandardRequestObject<T> where T : class, IRequestData
     {
-        public int Bearer { get; set; }
         public T? Data { get; set; }
 
-        public StandardRequestObject()
-        {
-        }
-
-        public StandardRequestObject(int bearer, T? data)
-        {
-            Bearer = bearer;
-            Data = data;
-        }
+        public StandardRequestObject() { }
+        public StandardRequestObject(T? data) { Data = data; }
     }
 }

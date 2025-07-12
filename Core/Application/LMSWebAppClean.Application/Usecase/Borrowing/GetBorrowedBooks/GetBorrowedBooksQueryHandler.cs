@@ -1,6 +1,5 @@
 ﻿using LMSWebAppClean.Application.Interface;
 using LMSWebAppClean.Domain.Base;
-using LMSWebAppClean.Domain.Enum;
 using LMSWebAppClean.Domain.Model;
 using MediatR;
 
@@ -8,14 +7,11 @@ namespace LMSWebAppClean.Application.Usecase.Borrowing.GetBorrowedBooks
 {
     public class GetBorrowedBooksQueryHandler : IRequestHandler<GetBorrowedBooksQuery, List<Book>>
     {
-        private readonly IPermissionChecker permissionChecker;
         private readonly IRepository<BaseUser> userRepository;
 
         public GetBorrowedBooksQueryHandler(
-            IPermissionChecker permissionChecker,
             IRepository<BaseUser> userRepository)
         {
-            this.permissionChecker = permissionChecker ?? throw new ArgumentNullException(nameof(permissionChecker));
             this.userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         }
 
@@ -23,8 +19,6 @@ namespace LMSWebAppClean.Application.Usecase.Borrowing.GetBorrowedBooks
         {
             try
             {
-                permissionChecker.Check(request.AuthId, Permission.BorrowViewBorrowedBooks, "You do not have permission to view borrowed books");
-                
                 // Load member with their borrowed books to ensure the collection is populated
                 var user = userRepository.GetWithIncludes(request.MemberId, "BorrowedBooks");
                 if (user == null || !(user is Member member))
@@ -33,10 +27,6 @@ namespace LMSWebAppClean.Application.Usecase.Borrowing.GetBorrowedBooks
                 }
 
                 return await Task.FromResult(member.BorrowedBooks);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                throw; // Re-throw permission exceptions
             }
             catch (KeyNotFoundException)
             {

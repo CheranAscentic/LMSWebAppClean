@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace LMSWebAppClean.Application.Interface
 {
-    public interface ICommand
+    public interface ICommand : IRequestData
     {
     }
 }

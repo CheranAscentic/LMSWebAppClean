@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace LMSWebAppClean.Domain.Enum
 {
-    public enum UserType
+    public static class UserType
     {
-        Member,
-        StaffMinor,
-        StaffManagement,
-        None
+        public const string Member = "Member";
+        public const string StaffMinor = "StaffMinor";
+        public const string StaffManagement = "StaffManagement";
+        public const string None = "None";
     }
 }

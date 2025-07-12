@@ -11,12 +11,10 @@ namespace LMSWebAppClean.Application.Usecase.Users.GetUserById
 {
     public class GetUserByIdQuery : IRequest<BaseUser>, IQuery
     {
-        public int AuthId { get; set; }
         public int UserId { get; set; }
 
-        public GetUserByIdQuery(int authId, int userId)
+        public GetUserByIdQuery(int userId)
         {
-            AuthId = authId;
             UserId = userId;
         }
     }

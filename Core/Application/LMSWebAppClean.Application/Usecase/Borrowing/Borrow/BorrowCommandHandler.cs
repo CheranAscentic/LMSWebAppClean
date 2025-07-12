@@ -14,18 +14,15 @@ namespace LMSWebAppClean.Application.Usecase.Borrowing.Borrow
     public class BorrowCommandHandler : IRequestHandler<BorrowCommand, Book>
     {
         private readonly IUnitOfWork unitOfWork;
-        private readonly IPermissionChecker permissionChecker;
         private readonly IRepository<BaseUser> userRepository;
         private readonly IRepository<Book> bookRepository;
 
         public BorrowCommandHandler(
             IUnitOfWork unitOfWork, 
-            IPermissionChecker permissionChecker, 
             IRepository<BaseUser> userRepository, 
             IRepository<Book> bookRepository)
         {
             this.unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-            this.permissionChecker = permissionChecker ?? throw new ArgumentNullException(nameof(permissionChecker));
             this.userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             this.bookRepository = bookRepository ?? throw new ArgumentNullException(nameof(bookRepository));
         }
@@ -34,8 +31,6 @@ namespace LMSWebAppClean.Application.Usecase.Borrowing.Borrow
         {
             try
             {
-                permissionChecker.Check(request.AuthId, Permission.BorrowBook, "You do not have permission to borrow books");
-
                 var book = bookRepository.Get(request.BookId);
                 if (book == null)
                 {
@@ -63,10 +58,6 @@ namespace LMSWebAppClean.Application.Usecase.Borrowing.Borrow
                 await unitOfWork.SaveChangesAsync();
 
                 return book;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                throw;
             }
             catch (KeyNotFoundException)
             {

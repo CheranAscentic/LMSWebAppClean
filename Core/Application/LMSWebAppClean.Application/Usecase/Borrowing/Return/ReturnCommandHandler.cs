@@ -14,18 +14,15 @@ namespace LMSWebAppClean.Application.Usecase.Borrowing.Return
     public class ReturnCommandHandler : IRequestHandler<ReturnCommand, Book>
     {
         private readonly IUnitOfWork unitOfWork;
-        private readonly IPermissionChecker permissionChecker;
         private readonly IRepository<BaseUser> userRepository;
         private readonly IRepository<Book> bookRepository;
 
         public ReturnCommandHandler(
             IUnitOfWork unitOfWork,
-            IPermissionChecker permissionChecker,
             IRepository<BaseUser> userRepository,
             IRepository<Book> bookRepository)
         {
             this.unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-            this.permissionChecker = permissionChecker ?? throw new ArgumentNullException(nameof(permissionChecker));
             this.userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             this.bookRepository = bookRepository ?? throw new ArgumentNullException(nameof(bookRepository));
         }
@@ -34,8 +31,6 @@ namespace LMSWebAppClean.Application.Usecase.Borrowing.Return
         {
             try
             {
-                permissionChecker.Check(request.AuthId, Permission.BorrowReturn, "You do not have permission to return books");
-
                 var book = bookRepository.Get(request.BookId);
                 if (book == null)
                 {

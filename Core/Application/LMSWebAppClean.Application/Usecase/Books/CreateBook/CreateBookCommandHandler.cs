@@ -22,15 +22,6 @@ namespace LMSWebAppClean.Application.Usecase.Books.CreateBook
         {
             try
             {
-                // Check if user has permission to create books
-                permissionChecker.Check(request.AuthId, Permission.BookAdd, "User does not have permission to create books.");
-
-                // Validate required fields
-                if (string.IsNullOrWhiteSpace(request.Title))
-                {
-                    throw new ArgumentException("Title is required.");
-                }
-
                 var book = new Book(
                     request.Title,
                     request.Author,
@@ -43,14 +34,6 @@ namespace LMSWebAppClean.Application.Usecase.Books.CreateBook
                 await unitOfWork.SaveChangesAsync();
 
                 return createdBook;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                throw; // Re-throw permission exceptions
-            }
-            catch (ArgumentException)
-            {
-                throw; // Re-throw validation exceptions
             }
             catch (Exception ex)
             {

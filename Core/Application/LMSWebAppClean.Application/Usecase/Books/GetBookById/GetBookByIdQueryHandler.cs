@@ -20,7 +20,7 @@ namespace LMSWebAppClean.Application.Usecase.Books.GetBookById
         {
             try
             {
-                permissionChecker.Check(request.AuthId, Permission.BookView, "User does not have permission to view book details.");
+                //permissionChecker.Check(request.AuthId, Permission.BookView, "User does not have permission to view book details.");
                 var book = bookRepository.Get(request.BookId);
                 
                 if (book == null)
@@ -29,10 +29,6 @@ namespace LMSWebAppClean.Application.Usecase.Books.GetBookById
                 }
                 
                 return await Task.FromResult(book);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                throw; // Re-throw permission exceptions
             }
             catch (KeyNotFoundException)
             {

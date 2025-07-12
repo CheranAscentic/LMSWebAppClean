@@ -27,10 +27,6 @@ namespace LMSWebAppClean.Application.Usecase.Users.UpdateUser
         {
             try
             {
-                // Check if user has permission to update users
-                permissionChecker.Check(request.AuthId, Permission.UserUpdate, "User does not have permission to update users.");
-
-                // Get existing user
                 var user = userRepository.Get(request.UserId);
                 if (user == null)
                 {

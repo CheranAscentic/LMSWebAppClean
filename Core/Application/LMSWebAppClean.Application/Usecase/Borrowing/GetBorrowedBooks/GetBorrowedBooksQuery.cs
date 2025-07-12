@@ -11,12 +11,10 @@ namespace LMSWebAppClean.Application.Usecase.Borrowing.GetBorrowedBooks
 {
     public class GetBorrowedBooksQuery : IRequest<List<Book>>, IQuery
     {
-        public int AuthId { get; set; }
         public int MemberId { get; set; }
 
-        public GetBorrowedBooksQuery(int authId, int memberId)
+        public GetBorrowedBooksQuery(int memberId)
         {
-            AuthId = authId;
             MemberId = memberId;
         }
     }

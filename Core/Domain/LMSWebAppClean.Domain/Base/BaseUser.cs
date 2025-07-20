@@ -11,6 +11,7 @@ namespace LMSWebAppClean.Domain.Base
 {
     using LMSWebAppClean.Domain.Enum;
     using LMSWebAppClean.Domain.Interface;
+    using System.Net;
 
     public abstract class BaseUser : IEntity
     {
@@ -19,6 +20,9 @@ namespace LMSWebAppClean.Domain.Base
         private int? id;
         private string? email;
 
+        private string? firstName;
+        private string? lastName;
+        private string? address;
         protected BaseUser() { }
 
         public BaseUser(string name, string userType)
@@ -65,6 +69,41 @@ namespace LMSWebAppClean.Domain.Base
                 if (string.IsNullOrWhiteSpace(value))
                     throw new ArgumentException("Email cannot be empty.");
                 email = value;
+            }
+        }
+
+        public string? FirstName
+        {
+            get => firstName;
+            set
+            {
+                if (value != null && value.Length < 2)
+                    throw new ArgumentException("First name must be at least 2 characters.");
+                firstName = value;
+            }
+        }
+
+        // Simple validation for LastName
+        public string? LastName
+        {
+            get => lastName;
+            set
+            {
+                if (value != null && value.Length < 2)
+                    throw new ArgumentException("Last name must be at least 2 characters.");
+                lastName = value;
+            }
+        }
+
+        // Simple validation for Address
+        public string? Address
+        {
+            get => address;
+            set
+            {
+                if (value != null && string.IsNullOrWhiteSpace(value))
+                    throw new ArgumentException("Address cannot be empty or whitespace.");
+                address = value;
             }
         }
     }

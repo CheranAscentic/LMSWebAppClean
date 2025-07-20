@@ -83,47 +83,18 @@ namespace LMSWebAppClean.API.Endpoint
             StandardRequestObject<GetAllBooksQuery> request, 
             IMediator mediator)
         {
-            try
-            {
-                // No permission check needed - public endpoint
-                var books = await mediator.Send(request.Data);
-                var response = StandardResponseObject<List<Book>>.Ok(books, "Books retrieved successfully");
-                return Results.Ok(response);
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = StandardResponseObject<List<Book>>.InternalError(
-                    ex.Message,
-                    "An error occurred while retrieving books");
-                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
-            }
+            var books = await mediator.Send(request.Data);
+            var response = StandardResponseObject<List<Book>>.Ok(books, "Books retrieved successfully");
+            return Results.Ok(response);
         }
 
         private async Task<IResult> HandleGetBookById(
             [FromBody] StandardRequestObject<GetBookByIdQuery> request, 
             [FromServices] IMediator mediator)
         {
-            try
-            {
-                // No permission check needed - public endpoint
-                var book = await mediator.Send(request.Data);
-                var response = StandardResponseObject<Book>.Ok(book, "Book retrieved successfully");
-                return Results.Ok(response);
-            }
-            catch (KeyNotFoundException)
-            {
-                var notFoundResponse = StandardResponseObject<Book>.NotFound(
-                    $"Book not found.",
-                    "Book not found");
-                return Results.NotFound(notFoundResponse);
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = StandardResponseObject<Book>.InternalError(
-                    ex.Message,
-                    "An error occurred while retrieving the book");
-                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
-            }
+            var book = await mediator.Send(request.Data);
+            var response = StandardResponseObject<Book>.Ok(book, "Book retrieved successfully");
+            return Results.Ok(response);
         }
 
         private async Task<IResult> HandleCreateBook(
@@ -132,49 +103,18 @@ namespace LMSWebAppClean.API.Endpoint
             [FromServices] ICurrentUserService currentUserService,
             [FromServices] IPermissionChecker permissionChecker)
         {
-            try
+            var currentUserId = currentUserService.DomainUserId;
+            if (!currentUserId.HasValue)
             {
-                // Check permission at endpoint level
-                var currentUserId = currentUserService.DomainUserId;
-                if (!currentUserId.HasValue)
-                {
-                    var unauthorizedResponse = StandardResponseObject<Book>.BadRequest(
-                        "User is not authenticated.",
-                        "Authentication required");
-                    return Results.Unauthorized();
-                }
-
-                // Check if user has permission to create books
-                permissionChecker.Check(
-                    currentUserId.Value, 
-                    Permission.Process.CreateBook, 
-                    "You don't have permission to create books.");
-
-                var book = await mediator.Send(request.Data);
-                var response = StandardResponseObject<Book>.Created(book, "Book created successfully");
-                return Results.Created($"/api/books/{book.Id}", response);
+                return Results.Unauthorized();
             }
-            catch (UnauthorizedAccessException ex)
-            {
-                var forbiddenResponse = StandardResponseObject<Book>.BadRequest(
-                    ex.Message,
-                    "Insufficient permissions");
-                return Results.StatusCode(403); // Forbidden
-            }
-            catch (ArgumentException ex)
-            {
-                var badRequestResponse = StandardResponseObject<Book>.BadRequest(
-                    ex.Message,
-                    "Book creation failed");
-                return Results.BadRequest(badRequestResponse);
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = StandardResponseObject<Book>.InternalError(
-                    ex.Message,
-                    "An error occurred while creating the book");
-                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
-            }
+            permissionChecker.Check(
+                currentUserId.Value, 
+                Permission.Process.CreateBook, 
+                "You don't have permission to create books.");
+            var book = await mediator.Send(request.Data);
+            var response = StandardResponseObject<Book>.Created(book, "Book created successfully");
+            return Results.Created($"/api/books/{book.Id}", response);
         }
 
         private async Task<IResult> HandleUpdateBookById(
@@ -183,53 +123,18 @@ namespace LMSWebAppClean.API.Endpoint
             [FromServices] ICurrentUserService currentUserService,
             [FromServices] IPermissionChecker permissionChecker)
         {
-            try
+            var currentUserId = currentUserService.DomainUserId;
+            if (!currentUserId.HasValue)
             {
-                // Check permission at endpoint level
-                var currentUserId = currentUserService.DomainUserId;
-                if (!currentUserId.HasValue)
-                {
-                    return Results.Unauthorized();
-                }
-
-                // Check if user has permission to update books
-                permissionChecker.Check(
-                    currentUserId.Value, 
-                    Permission.Process.UpdateBook, 
-                    "You don't have permission to update books.");
-
-                var book = await mediator.Send(request.Data);
-                var response = StandardResponseObject<Book>.Ok(book, "Book updated successfully");
-                return Results.Ok(response);
+                return Results.Unauthorized();
             }
-            catch (UnauthorizedAccessException ex)
-            {
-                var forbiddenResponse = StandardResponseObject<Book>.BadRequest(
-                    ex.Message,
-                    "Insufficient permissions");
-                return Results.StatusCode(403); // Forbidden
-            }
-            catch (KeyNotFoundException)
-            {
-                var notFoundResponse = StandardResponseObject<Book>.NotFound(
-                    $"Book not found.",
-                    "Book not found");
-                return Results.NotFound(notFoundResponse);
-            }
-            catch (ArgumentException ex)
-            {
-                var badRequestResponse = StandardResponseObject<Book>.BadRequest(
-                    ex.Message,
-                    "Book update failed");
-                return Results.BadRequest(badRequestResponse);
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = StandardResponseObject<Book>.InternalError(
-                    ex.Message,
-                    "An error occurred while updating the book");
-                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
-            }
+            permissionChecker.Check(
+                currentUserId.Value, 
+                Permission.Process.UpdateBook, 
+                "You don't have permission to update books.");
+            var book = await mediator.Send(request.Data);
+            var response = StandardResponseObject<Book>.Ok(book, "Book updated successfully");
+            return Results.Ok(response);
         }
 
         private async Task<IResult> HandleDeleteBookById(
@@ -238,46 +143,18 @@ namespace LMSWebAppClean.API.Endpoint
             [FromServices] ICurrentUserService currentUserService,
             [FromServices] IPermissionChecker permissionChecker)
         {
-            try
+            var currentUserId = currentUserService.DomainUserId;
+            if (!currentUserId.HasValue)
             {
-                // Check permission at endpoint level
-                var currentUserId = currentUserService.DomainUserId;
-                if (!currentUserId.HasValue)
-                {
-                    return Results.Unauthorized();
-                }
-
-                // Check if user has permission to delete books
-                permissionChecker.Check(
-                    currentUserId.Value, 
-                    Permission.Process.DeleteBook, 
-                    "You don't have permission to delete books.");
-
-                await mediator.Send(request.Data);
-                var response = StandardResponseObject<string>.Ok("Book deleted successfully", "Book deleted successfully");
-                return Results.Ok(response);
+                return Results.Unauthorized();
             }
-            catch (UnauthorizedAccessException ex)
-            {
-                var forbiddenResponse = StandardResponseObject<string>.BadRequest(
-                    ex.Message,
-                    "Insufficient permissions");
-                return Results.StatusCode(403); // Forbidden
-            }
-            catch (KeyNotFoundException)
-            {
-                var notFoundResponse = StandardResponseObject<string>.NotFound(
-                    $"Book not found.",
-                    "Book not found");
-                return Results.NotFound(notFoundResponse);
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = StandardResponseObject<string>.InternalError(
-                    ex.Message,
-                    "An error occurred while deleting the book");
-                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
-            }
+            permissionChecker.Check(
+                currentUserId.Value, 
+                Permission.Process.DeleteBook, 
+                "You don't have permission to delete books.");
+            await mediator.Send(request.Data);
+            var response = StandardResponseObject<string>.Ok("Book deleted successfully", "Book deleted successfully");
+            return Results.Ok(response);
         }
     }
 }

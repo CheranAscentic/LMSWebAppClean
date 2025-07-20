@@ -22,6 +22,7 @@ namespace LMSWebAppClean.API.Endpoint
             auth.MapPost("/register", HandleRegister)
                 .WithName("Register")
                 .WithSummary("Register a new user")
+                .AllowAnonymous()
                 .WithDescription("Registers a new user with email/password authentication and creates associated domain user. No authentication required - public access.")
                 .Produces<StandardResponseObject<string>>(StatusCodes.Status201Created)
                 .Produces<StandardResponseObject<string>>(StatusCodes.Status400BadRequest)
@@ -70,160 +71,83 @@ namespace LMSWebAppClean.API.Endpoint
             [FromBody] StandardRequestObject<RegisterUserCommand> request, 
             [FromServices] IMediator mediator)
         {
-            try
+            // Simple validation - let global handler catch exceptions
+            if (request?.Data == null)
             {
-                // Validate request data
-                if (request?.Data == null)
-                {
-                    var validationResponse = StandardResponseObject<string>.BadRequest(
-                        "Request data is required",
-                        "Registration validation failed");
-                    return Results.BadRequest(validationResponse);
-                }
-
-                // No permission check needed - public endpoint
-                var userId = await mediator.Send(request.Data);
-                var response = StandardResponseObject<string>.Created(userId, "User registered successfully");
-                return Results.Created($"/api/auth/user/{userId}", response);
-            }
-            catch (ArgumentException ex)
-            {
-                var badRequestResponse = StandardResponseObject<string>.BadRequest(
-                    ex.Message,
+                var validationResponse = StandardResponseObject<string>.BadRequest(
+                    "Request data is required",
                     "Registration validation failed");
-                return Results.BadRequest(badRequestResponse);
+                return Results.BadRequest(validationResponse);
             }
-            catch (InvalidOperationException ex)
-            {
-                var conflictResponse = StandardResponseObject<string>.BadRequest(
-                    ex.Message,
-                    "Registration conflict");
-                return Results.StatusCode(409);
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = StandardResponseObject<string>.InternalError(
-                    ex.Message,
-                    "An error occurred during registration");
-                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
-            }
+
+            // Let global exception handler catch and handle any exceptions
+            var userId = await mediator.Send(request.Data);
+            var response = StandardResponseObject<string>.Created(userId, "User registered successfully");
+            return Results.Created($"/api/auth/user/{userId}", response);
         }
 
         private async Task<IResult> HandleLogin(
             [FromBody] StandardRequestObject<LoginUserCommand> request, 
             [FromServices] IMediator mediator)
         {
-            try
+            // Simple validation - let global handler catch exceptions
+            if (request?.Data == null)
             {
-                // Validate request data
-                if (request?.Data == null)
-                {
-                    var validationResponse = StandardResponseObject<string>.BadRequest(
-                        "Request data is required",
-                        "Login validation failed");
-                    return Results.BadRequest(validationResponse);
-                }
-
-                // No permission check needed - public endpoint
-                LoginDTO loginDTO = await mediator.Send(request.Data);
-                var response = StandardResponseObject<LoginDTO>.Ok(loginDTO, "Login successful");
-                return Results.Ok(response);
-            }
-            catch (ArgumentException ex)
-            {
-                var badRequestResponse = StandardResponseObject<string>.BadRequest(
-                    ex.Message,
+                var validationResponse = StandardResponseObject<string>.BadRequest(
+                    "Request data is required",
                     "Login validation failed");
-                return Results.BadRequest(badRequestResponse);
+                return Results.BadRequest(validationResponse);
             }
-            catch (UnauthorizedAccessException ex)
-            {
-                var unauthorizedResponse = StandardResponseObject<string>.BadRequest(
-                    ex.Message,
-                    "Authentication failed");
-                return Results.Unauthorized();
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = StandardResponseObject<string>.InternalError(
-                    ex.Message,
-                    "An error occurred during login");
-                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
-            }
+
+            // Let global exception handler catch and handle any exceptions
+            var loginDTO = await mediator.Send(request.Data);
+            var response = StandardResponseObject<LoginDTO>.Ok(loginDTO, "Login successful");
+            return Results.Ok(response);
         }
 
         private IResult HandleLogout(
             [FromServices] ICurrentUserService currentUserService)
         {
-            try
+            // Simple check - let global handler catch exceptions
+            var currentUserId = currentUserService.DomainUserId;
+            if (!currentUserId.HasValue)
             {
-                // Check authentication at endpoint level
-                var currentUserId = currentUserService.DomainUserId;
-                if (!currentUserId.HasValue)
-                {
-                    return Results.Unauthorized();
-                }
+                return Results.Unauthorized();
+            }
 
-                // No specific permission check needed beyond authentication
-                var response = StandardResponseObject<string>.Ok("Logged out", "Logout successful");
-                return Results.Ok(response);
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = StandardResponseObject<string>.InternalError(
-                    ex.Message,
-                    "An error occurred during logout");
-                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
-            }
+            var response = StandardResponseObject<string>.Ok("Logged out", "Logout successful");
+            return Results.Ok(response);
         }
 
         private IResult HandleGetUserTypes()
         {
-            try
+            // Let global exception handler catch any exceptions
+            var userTypes = new List<string>
             {
-                var userTypes = new List<string>
-                {
-                    UserType.Member,
-                    UserType.StaffMinor,
-                    UserType.StaffManagement,
-                };
+                UserType.Member,
+                UserType.StaffMinor,
+                UserType.StaffManagement,
+            };
 
-                var response = StandardResponseObject<List<string>>.Ok(userTypes, "User types retrieved successfully");
-                return Results.Ok(response);
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = StandardResponseObject<List<string>>.InternalError(
-                    ex.Message,
-                    "An error occurred while retrieving user types");
-                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
-            }
+            var response = StandardResponseObject<List<string>>.Ok(userTypes, "User types retrieved successfully");
+            return Results.Ok(response);
         }
 
         private IResult HandleTest(
             [FromServices] ICurrentUserService currentUserService)
         {
-            try
+            // Let global exception handler catch any exceptions
+            var userInfo = new
             {
-                var userInfo = new
-                {
-                    IsAuthenticated = currentUserService.IsAuthenticated,
-                    UserId = currentUserService.UserId,
-                    DomainUserId = currentUserService.DomainUserId,
-                    Email = currentUserService.Email,
-                    UserType = currentUserService.UserType
-                };
+                IsAuthenticated = currentUserService.IsAuthenticated,
+                UserId = currentUserService.UserId,
+                DomainUserId = currentUserService.DomainUserId,
+                Email = currentUserService.Email,
+                UserType = currentUserService.UserType
+            };
 
-                var response = StandardResponseObject<object>.Ok(userInfo, "Authentication test successful");
-                return Results.Ok(response);
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = StandardResponseObject<object>.InternalError(
-                    ex.Message,
-                    "Authentication test failed");
-                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
-            }
+            var response = StandardResponseObject<object>.Ok(userInfo, "Authentication test successful");
+            return Results.Ok(response);
         }
     }
 }

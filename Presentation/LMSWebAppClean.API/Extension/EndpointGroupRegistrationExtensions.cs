@@ -22,8 +22,7 @@ namespace LMSWebAppClean.API.Extension
                 }
                 catch (Exception)
                 {
-                    // Silently continue if endpoint registration fails
-                    // In production, you might want to use proper logging instead
+                    throw;
                 }
             }
         }

@@ -11,6 +11,9 @@ using LMSWebAppClean.Application.Usecase.Users.CreateUser;
 using LMSWebAppClean.Application.Usecase.Users.UpdateUser;
 using LMSWebAppClean.Application.Usecase.Users.DeleteUser;
 using LMSWebAppClean.Domain.Enum;
+using Microsoft.AspNetCore.Identity;
+using LMSWebAppClean.Identity.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace LMSWebAppClean.API.Endpoint
 {
@@ -92,39 +95,18 @@ namespace LMSWebAppClean.API.Endpoint
             [FromServices] ICurrentUserService currentUserService,
             [FromServices] IPermissionChecker permissionChecker)
         {
-            try
+            var currentUserId = currentUserService.DomainUserId;
+            if (!currentUserId.HasValue)
             {
-                // Check permission at endpoint level
-                var currentUserId = currentUserService.DomainUserId;
-                if (!currentUserId.HasValue)
-                {
-                    return Results.Unauthorized();
-                }
-
-                // Check if user has permission to view all users
-                permissionChecker.Check(
-                    currentUserId.Value, 
-                    Permission.Process.GetAllUsers, 
-                    "You don't have permission to view all users.");
-
-                var users = await mediator.Send(request.Data);
-                var response = StandardResponseObject<List<BaseUser>>.Ok(users, "Users retrieved successfully");
-                return Results.Ok(response);
+                return Results.Unauthorized();
             }
-            catch (UnauthorizedAccessException ex)
-            {
-                var forbiddenResponse = StandardResponseObject<List<BaseUser>>.BadRequest(
-                    ex.Message,
-                    "Insufficient permissions");
-                return Results.StatusCode(403); // Forbidden
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = StandardResponseObject<List<BaseUser>>.InternalError(
-                    ex.Message,
-                    "An error occurred while retrieving users");
-                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
-            }
+            permissionChecker.Check(
+                currentUserId.Value, 
+                Permission.Process.GetAllUsers, 
+                "You don't have permission to view all users.");
+            var users = await mediator.Send(request.Data);
+            var response = StandardResponseObject<List<BaseUser>>.Ok(users, "Users retrieved successfully");
+            return Results.Ok(response);
         }
 
         private async Task<IResult> HandleGetUserById(
@@ -133,47 +115,19 @@ namespace LMSWebAppClean.API.Endpoint
             [FromServices] ICurrentUserService currentUserService,
             [FromServices] IPermissionChecker permissionChecker)
         {
-            try
+            var currentUserId = currentUserService.DomainUserId;
+            if (!currentUserId.HasValue)
             {
-                // Check permission at endpoint level
-                var currentUserId = currentUserService.DomainUserId;
-                if (!currentUserId.HasValue)
-                {
-                    return Results.Unauthorized();
-                }
-
-                // Check self or process permission for viewing user
-                permissionChecker.Check(
-                    currentUserId.Value,
-                    request.Data.UserId,
-                    Permission.Self.GetUserById,    // Self permission
-                    Permission.Process.GetUserById); // Process permission
-
-                var user = await mediator.Send(request.Data);
-                var response = StandardResponseObject<BaseUser>.Ok(user, "User retrieved successfully");
-                return Results.Ok(response);
+                return Results.Unauthorized();
             }
-            catch (UnauthorizedAccessException ex)
-            {
-                var forbiddenResponse = StandardResponseObject<BaseUser>.BadRequest(
-                    ex.Message,
-                    "Insufficient permissions");
-                return Results.StatusCode(403); // Forbidden
-            }
-            catch (KeyNotFoundException)
-            {
-                var notFoundResponse = StandardResponseObject<BaseUser>.NotFound(
-                    $"User not found.",
-                    "User not found");
-                return Results.NotFound(notFoundResponse);
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = StandardResponseObject<BaseUser>.InternalError(
-                    ex.Message,
-                    "An error occurred while retrieving the user");
-                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
-            }
+            permissionChecker.Check(
+                currentUserId.Value,
+                request.Data.UserId,
+                Permission.Self.GetUserById,    // Self permission
+                Permission.Process.GetUserById); // Process permission
+            var user = await mediator.Send(request.Data);
+            var response = StandardResponseObject<BaseUser>.Ok(user, "User retrieved successfully");
+            return Results.Ok(response);
         }
 
         private async Task<IResult> HandleCreateUser(
@@ -182,46 +136,18 @@ namespace LMSWebAppClean.API.Endpoint
             [FromServices] ICurrentUserService currentUserService,
             [FromServices] IPermissionChecker permissionChecker)
         {
-            try
+            var currentUserId = currentUserService.DomainUserId;
+            if (!currentUserId.HasValue)
             {
-                // Check permission at endpoint level
-                var currentUserId = currentUserService.DomainUserId;
-                if (!currentUserId.HasValue)
-                {
-                    return Results.Unauthorized();
-                }
-
-                // Check if user has permission to create users
-                permissionChecker.Check(
-                    currentUserId.Value, 
-                    Permission.Process.CreateUser, 
-                    "You don't have permission to create users.");
-
-                var user = await mediator.Send(request.Data);
-                var response = StandardResponseObject<BaseUser>.Created(user, "User created successfully");
-                return Results.Created($"/api/users/{user.Id}", response);
+                return Results.Unauthorized();
             }
-            catch (UnauthorizedAccessException ex)
-            {
-                var forbiddenResponse = StandardResponseObject<BaseUser>.BadRequest(
-                    ex.Message,
-                    "Insufficient permissions");
-                return Results.StatusCode(403); // Forbidden
-            }
-            catch (ArgumentException ex)
-            {
-                var badRequestResponse = StandardResponseObject<BaseUser>.BadRequest(
-                    ex.Message,
-                    "User creation failed");
-                return Results.BadRequest(badRequestResponse);
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = StandardResponseObject<BaseUser>.InternalError(
-                    ex.Message,
-                    "An error occurred while creating the user");
-                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
-            }
+            permissionChecker.Check(
+                currentUserId.Value, 
+                Permission.Process.CreateUser, 
+                "You don't have permission to create users.");
+            var user = await mediator.Send(request.Data);
+            var response = StandardResponseObject<BaseUser>.Created(user, "User created successfully");
+            return Results.Created($"/api/users/{user.Id}", response);
         }
 
         private async Task<IResult> HandleUpdateUserById(
@@ -230,102 +156,47 @@ namespace LMSWebAppClean.API.Endpoint
             [FromServices] ICurrentUserService currentUserService,
             [FromServices] IPermissionChecker permissionChecker)
         {
-            try
+            var currentUserId = currentUserService.DomainUserId;
+            if (!currentUserId.HasValue)
             {
-                // Check permission at endpoint level
-                var currentUserId = currentUserService.DomainUserId;
-                if (!currentUserId.HasValue)
-                {
-                    return Results.Unauthorized();
-                }
-
-                // Check self or process permission for updating user
-                permissionChecker.Check(
-                    currentUserId.Value,
-                    request.Data.UserId,
-                    Permission.Self.UpdateUser,     // Self permission
-                    Permission.Process.UpdateUser); // Process permission
-
-                var user = await mediator.Send(request.Data);
-                var response = StandardResponseObject<BaseUser>.Ok(user, "User updated successfully");
-                return Results.Ok(response);
+                return Results.Unauthorized();
             }
-            catch (UnauthorizedAccessException ex)
-            {
-                var forbiddenResponse = StandardResponseObject<BaseUser>.BadRequest(
-                    ex.Message,
-                    "Insufficient permissions");
-                return Results.StatusCode(403); // Forbidden
-            }
-            catch (KeyNotFoundException)
-            {
-                var notFoundResponse = StandardResponseObject<BaseUser>.NotFound(
-                    $"User not found.",
-                    "User not found");
-                return Results.NotFound(notFoundResponse);
-            }
-            catch (ArgumentException ex)
-            {
-                var badRequestResponse = StandardResponseObject<BaseUser>.BadRequest(
-                    ex.Message,
-                    "User update failed");
-                return Results.BadRequest(badRequestResponse);
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = StandardResponseObject<BaseUser>.InternalError(
-                    ex.Message,
-                    "An error occurred while updating the user");
-                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
-            }
+            permissionChecker.Check(
+                currentUserId.Value,
+                request.Data.UserId,
+                Permission.Self.UpdateUser,     // Self permission
+                Permission.Process.UpdateUser); // Process permission
+            var user = await mediator.Send(request.Data);
+            var response = StandardResponseObject<BaseUser>.Ok(user, "User updated successfully");
+            return Results.Ok(response);
         }
 
         private async Task<IResult> HandleDeleteUserById(
             [FromBody] StandardRequestObject<DeleteUserCommand> request, 
             [FromServices] IMediator mediator,
             [FromServices] ICurrentUserService currentUserService,
-            [FromServices] IPermissionChecker permissionChecker)
+            [FromServices] IPermissionChecker permissionChecker,
+            [FromServices] UserManager<AppUser> userManager)
         {
-            try
+            var currentUserId = currentUserService.DomainUserId;
+            if (!currentUserId.HasValue)
             {
-                // Check permission at endpoint level
-                var currentUserId = currentUserService.DomainUserId;
-                if (!currentUserId.HasValue)
-                {
-                    return Results.Unauthorized();
-                }
-
-                // Check if user has permission to delete users
-                permissionChecker.Check(
-                    currentUserId.Value, 
-                    Permission.Process.DeleteUser, 
-                    "You don't have permission to delete users.");
-
-                await mediator.Send(request.Data);
-                var response = StandardResponseObject<string>.Ok("User deleted successfully", "User deleted successfully");
-                return Results.Ok(response);
+                return Results.Unauthorized();
             }
-            catch (UnauthorizedAccessException ex)
+            permissionChecker.Check(
+                currentUserId.Value, 
+                Permission.Process.DeleteUser, 
+                "You don't have permission to delete users.");
+            var appUser = await userManager.Users
+                .FirstOrDefaultAsync(u => u.DomainUserId == request.Data.UserId);
+            await mediator.Send(request.Data);
+            if (appUser != null)
             {
-                var forbiddenResponse = StandardResponseObject<string>.BadRequest(
-                    ex.Message,
-                    "Insufficient permissions");
-                return Results.StatusCode(403); // Forbidden
+                var identityResult = await userManager.DeleteAsync(appUser);
+                // Optionally log identityResult errors
             }
-            catch (KeyNotFoundException)
-            {
-                var notFoundResponse = StandardResponseObject<string>.NotFound(
-                    $"User not found.",
-                    "User not found");
-                return Results.NotFound(notFoundResponse);
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = StandardResponseObject<string>.InternalError(
-                    ex.Message,
-                    "An error occurred while deleting the user");
-                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
-            }
+            var response = StandardResponseObject<AppUser>.Ok(appUser, "User deleted successfully");
+            return Results.Ok(response);
         }
     }
 }

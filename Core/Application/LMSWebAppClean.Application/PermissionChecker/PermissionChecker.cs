@@ -16,8 +16,8 @@ namespace LMSWebAppClean.Application.PermissionChecker
         {
             this.userRepository = userRepository;
             this.unitOfWork = unitOfWork;
-            
-            userTypePermissions = new Dictionary<string, List<string>>
+
+            this.userTypePermissions = new Dictionary<string, List<string>>
             {
                 {
                     UserType.None,
@@ -25,7 +25,7 @@ namespace LMSWebAppClean.Application.PermissionChecker
                     {
                         Permission.HandleGetAllBooks,
                         Permission.HandleGetBookById,
-                        Permission.Public
+                        Permission.Public,
                     }
                 },
                 {
@@ -49,11 +49,9 @@ namespace LMSWebAppClean.Application.PermissionChecker
                         Permission.HandleGetBookById,
                         Permission.Self.GetUserById,
                         Permission.Self.UpdateUser,
-                        Permission.Self.BorrowBook,
-                        Permission.Self.ReturnBook,
                         Permission.Self.GetBorrowedBooks,
-                        Permission.Process.CreateBook,
                         Permission.Process.UpdateBook,
+                        Permission.Process.CreateBook,
                         Permission.Process.DeleteBook,
                         Permission.Process.BorrowBook,
                         Permission.Process.ReturnBook,
@@ -64,13 +62,23 @@ namespace LMSWebAppClean.Application.PermissionChecker
                     UserType.StaffManagement,
                     new List<string>
                     {
-                        Permission.All
+                        Permission.Process.GetAllUsers,
+                        Permission.HandleGetAllBooks,
+                        Permission.HandleGetBookById,
+                        Permission.Self.GetUserById,
+                        Permission.Self.UpdateUser,
+                        Permission.Process.UpdateUser,
+                        Permission.Process.CreateBook,
+                        Permission.Process.UpdateBook,
+                        Permission.Process.BorrowBook,
+                        Permission.Process.DeleteBook,
+                        Permission.Process.ReturnBook,
+                        Permission.Process.GetBorrowedBooks,
                     }
                 },
             };
         }
 
-        // Public Check methods for user-to-user permission checks that throw UnauthorizedAccessException
         public void Check(int requestUserId, int targetUserId, string selfPermission, string processPermission)
         {
             try
@@ -174,7 +182,7 @@ namespace LMSWebAppClean.Application.PermissionChecker
         {
             var user = userRepository.Get(userId);
             if (user == null)
-                throw new System.UnauthorizedAccessException($"User with ID {userId} not found.");
+                throw new InvalidOperationException($"User with ID {userId} not found.");
             return user;
         }
 

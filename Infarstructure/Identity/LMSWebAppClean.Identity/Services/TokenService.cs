@@ -24,7 +24,7 @@ namespace LMSWebAppClean.Identity.Services
             int userId = user.Id;
             string email = user.Email;
             string userType = user.Type;
-            
+
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, userId.ToString()),

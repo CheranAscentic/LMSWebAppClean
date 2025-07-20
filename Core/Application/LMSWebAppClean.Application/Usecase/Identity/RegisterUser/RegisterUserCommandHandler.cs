@@ -36,11 +36,11 @@ namespace LMSWebAppClean.Application.Usecase.Identity.RegisterUser
             }
             catch (InvalidOperationException)
             {
-                throw; // Re-throw business logic exceptions
+                throw;
             }
             catch (Exception ex)
             {
-                throw new Exception("An error occurred while processing the registration request.", ex);
+                throw new Exception("An error occurred while processing the registration request." + ex.Message, ex);
             }
         }
     }

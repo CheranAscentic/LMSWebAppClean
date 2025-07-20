@@ -66,54 +66,19 @@ namespace LMSWebAppClean.API.Endpoint
             [FromServices] ICurrentUserService currentUserService,
             [FromServices] IPermissionChecker permissionChecker)
         {
-            try
+            var currentUserId = currentUserService.DomainUserId;
+            if (!currentUserId.HasValue)
             {
-                // Check permission at endpoint level
-                var currentUserId = currentUserService.DomainUserId;
-                if (!currentUserId.HasValue)
-                {
-                    return Results.Unauthorized();
-                }
-
-                // Check self or process permission for borrowing books
-                permissionChecker.Check(
-                    currentUserId.Value,
-                    request.Data.MemberId,
-                    Permission.Self.BorrowBook,     // Self permission
-                    Permission.Process.BorrowBook); // Process permission
-
-                var book = await mediator.Send(request.Data);
-                var response = StandardResponseObject<Book>.Ok(book, "Book borrowed successfully");
-                return Results.Ok(response);
+                return Results.Unauthorized();
             }
-            catch (UnauthorizedAccessException ex)
-            {
-                var forbiddenResponse = StandardResponseObject<Book>.BadRequest(
-                    ex.Message,
-                    "Insufficient permissions");
-                return Results.StatusCode(403); // Forbidden
-            }
-            catch (KeyNotFoundException ex)
-            {
-                var notFoundResponse = StandardResponseObject<Book>.NotFound(
-                    ex.Message,
-                    "Resource not found");
-                return Results.NotFound(notFoundResponse);
-            }
-            catch (InvalidOperationException ex)
-            {
-                var badRequestResponse = StandardResponseObject<Book>.BadRequest(
-                    ex.Message,
-                    "Borrow operation failed");
-                return Results.BadRequest(badRequestResponse);
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = StandardResponseObject<Book>.InternalError(
-                    ex.Message,
-                    "An error occurred while borrowing the book");
-                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
-            }
+            permissionChecker.Check(
+                currentUserId.Value,
+                request.Data.MemberId,
+                Permission.Self.BorrowBook,     // Self permission
+                Permission.Process.BorrowBook); // Process permission
+            var book = await mediator.Send(request.Data);
+            var response = StandardResponseObject<Book>.Ok(book, "Book borrowed successfully");
+            return Results.Ok(response);
         }
 
         private async Task<IResult> HandleReturnBook(
@@ -122,54 +87,19 @@ namespace LMSWebAppClean.API.Endpoint
             [FromServices] ICurrentUserService currentUserService,
             [FromServices] IPermissionChecker permissionChecker)
         {
-            try
+            var currentUserId = currentUserService.DomainUserId;
+            if (!currentUserId.HasValue)
             {
-                // Check permission at endpoint level
-                var currentUserId = currentUserService.DomainUserId;
-                if (!currentUserId.HasValue)
-                {
-                    return Results.Unauthorized();
-                }
-
-                // Check self or process permission for returning books
-                permissionChecker.Check(
-                    currentUserId.Value,
-                    request.Data.MemberId,
-                    Permission.Self.ReturnBook,     // Self permission
-                    Permission.Process.ReturnBook); // Process permission
-
-                var book = await mediator.Send(request.Data);
-                var response = StandardResponseObject<Book>.Ok(book, "Book returned successfully");
-                return Results.Ok(response);
+                return Results.Unauthorized();
             }
-            catch (UnauthorizedAccessException ex)
-            {
-                var forbiddenResponse = StandardResponseObject<Book>.BadRequest(
-                    ex.Message,
-                    "Insufficient permissions");
-                return Results.StatusCode(403); // Forbidden
-            }
-            catch (KeyNotFoundException ex)
-            {
-                var notFoundResponse = StandardResponseObject<Book>.NotFound(
-                    ex.Message,
-                    "Resource not found");
-                return Results.NotFound(notFoundResponse);
-            }
-            catch (InvalidOperationException ex)
-            {
-                var badRequestResponse = StandardResponseObject<Book>.BadRequest(
-                    ex.Message,
-                    "Return operation failed");
-                return Results.BadRequest(badRequestResponse);
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = StandardResponseObject<Book>.InternalError(
-                    ex.Message,
-                    "An error occurred while returning the book");
-                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
-            }
+            permissionChecker.Check(
+                currentUserId.Value,
+                request.Data.MemberId,
+                Permission.Self.ReturnBook,     // Self permission
+                Permission.Process.ReturnBook); // Process permission
+            var book = await mediator.Send(request.Data);
+            var response = StandardResponseObject<Book>.Ok(book, "Book returned successfully");
+            return Results.Ok(response);
         }
 
         private async Task<IResult> HandleGetBorrowedBooksByMemberId(
@@ -178,47 +108,19 @@ namespace LMSWebAppClean.API.Endpoint
             [FromServices] ICurrentUserService currentUserService,
             [FromServices] IPermissionChecker permissionChecker)
         {
-            try
+            var currentUserId = currentUserService.DomainUserId;
+            if (!currentUserId.HasValue)
             {
-                // Check permission at endpoint level
-                var currentUserId = currentUserService.DomainUserId;
-                if (!currentUserId.HasValue)
-                {
-                    return Results.Unauthorized();
-                }
-
-                // Check self or process permission for viewing borrowed books
-                permissionChecker.Check(
-                    currentUserId.Value,
-                    request.Data.MemberId,
-                    Permission.Self.GetBorrowedBooks,     // Self permission
-                    Permission.Process.GetBorrowedBooks); // Process permission
-
-                var books = await mediator.Send(request.Data);
-                var response = StandardResponseObject<List<Book>>.Ok(books, "Borrowed books retrieved successfully");
-                return Results.Ok(response);
+                return Results.Unauthorized();
             }
-            catch (UnauthorizedAccessException ex)
-            {
-                var forbiddenResponse = StandardResponseObject<List<Book>>.BadRequest(
-                    ex.Message,
-                    "Insufficient permissions");
-                return Results.StatusCode(403); // Forbidden
-            }
-            catch (KeyNotFoundException ex)
-            {
-                var notFoundResponse = StandardResponseObject<List<Book>>.NotFound(
-                    ex.Message,
-                    "Member not found");
-                return Results.NotFound(notFoundResponse);
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = StandardResponseObject<List<Book>>.InternalError(
-                    ex.Message,
-                    "An error occurred while retrieving borrowed books");
-                return Results.Problem(detail: errorResponse.Error, statusCode: 500);
-            }
+            permissionChecker.Check(
+                currentUserId.Value,
+                request.Data.MemberId,
+                Permission.Self.GetBorrowedBooks,     // Self permission
+                Permission.Process.GetBorrowedBooks); // Process permission
+            var books = await mediator.Send(request.Data);
+            var response = StandardResponseObject<List<Book>>.Ok(books, "Borrowed books retrieved successfully");
+            return Results.Ok(response);
         }
     }
 }

@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LMSWebAppClean.Identity.Migrations
 {
     [DbContext(typeof(IdentityDBContext))]
-    [Migration("20250711094108_InitialIdentityCreate")]
-    partial class InitialIdentityCreate
+    [Migration("20250714063915_InitialIdentityMigration")]
+    partial class InitialIdentityMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

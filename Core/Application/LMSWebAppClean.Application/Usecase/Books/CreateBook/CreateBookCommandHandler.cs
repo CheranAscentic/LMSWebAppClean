@@ -29,6 +29,9 @@ namespace LMSWebAppClean.Application.Usecase.Books.CreateBook
                     request.Category
                 );
 
+                book.ISBN = request.ISBN;
+                book.Synopsis = request.Synopsis;
+
                 var createdBook = bookRepository.Add(book);
 
                 await unitOfWork.SaveChangesAsync();

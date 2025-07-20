@@ -23,6 +23,9 @@ namespace LMSWebAppClean.Domain.Model
         [JsonIgnore]
         public Member Member { get; set; }
 
+        private string? isbn;
+        private string? synopsis;
+
         public Book()
         {
         }
@@ -98,6 +101,34 @@ namespace LMSWebAppClean.Domain.Model
                     throw new Exception("ID must be a non-negative integer.");
                 }
                 id = value == 0 ? null : value;
+            }
+        }
+
+        // Simple validation for ISBN
+        public string? ISBN
+        {
+            get { return isbn; }
+            set
+            {
+                if (!string.IsNullOrWhiteSpace(value) && value.Length < 10)
+                {
+                    throw new Exception("ISBN must be at least 10 characters.");
+                }
+                isbn = value;
+            }
+        }
+
+        // Simple validation for Synopsis
+        public string? Synopsis
+        {
+            get { return synopsis; }
+            set
+            {
+                if (!string.IsNullOrWhiteSpace(value) && value.Length < 10)
+                {
+                    throw new Exception("Synopsis must be at least 10 characters.");
+                }
+                synopsis = value;
             }
         }
     }

@@ -13,6 +13,9 @@ namespace LMSWebAppClean.Application.Usecase.Users.UpdateUser
     {
         public int UserId { get; set; }
         public string? Name { get; set; }
+        public string? firstName { get; set; }
+        public string? lastName { get; set; }
+        public string? address { get; set; }
 
         public UpdateUserCommand(int userId, string? name)
         {

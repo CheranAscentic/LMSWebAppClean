@@ -38,6 +38,15 @@ namespace LMSWebAppClean.Persistence.Configuration
                 .IsRequired()
                 .HasMaxLength(50);
 
+            builder.Property(u => u.FirstName)
+                .HasMaxLength(50);
+
+            builder.Property(u => u.LastName)
+                .HasMaxLength(50);
+
+            builder.Property(u => u.Address)
+                .HasMaxLength(255);
+
             builder.UseTptMappingStrategy();
 
             builder.ToTable("Users");

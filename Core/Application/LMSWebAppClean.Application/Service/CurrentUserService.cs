@@ -13,11 +13,15 @@ namespace LMSWebAppClean.Application.Service
             this.httpContextAccessor = httpContextAccessor;
         }
 
-        public int? UserId => GetClaimValue<int?>(ClaimTypes.NameIdentifier);
-        public int? DomainUserId => GetClaimValue<int?>("DomainUserId");
-        public string? Email => GetClaimValue<string>(ClaimTypes.Email);
-        public string? UserType => GetClaimValue<string>(ClaimTypes.Role);
-        public bool IsAuthenticated => httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
+        public int? UserId => this.GetClaimValue<int?>(ClaimTypes.NameIdentifier);
+
+        public int? DomainUserId => this.GetClaimValue<int?>("DomainUserId");
+
+        public string? Email => this.GetClaimValue<string>(ClaimTypes.Email);
+
+        public string? UserType => this.GetClaimValue<string>(ClaimTypes.Role);
+
+        public bool IsAuthenticated => this.httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
 
         private T? GetClaimValue<T>(string claimType)
         {

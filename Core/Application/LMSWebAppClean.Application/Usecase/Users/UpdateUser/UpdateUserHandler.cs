@@ -39,6 +39,22 @@ namespace LMSWebAppClean.Application.Usecase.Users.UpdateUser
                     user.Name = request.Name;
                 }
 
+                if (!string.IsNullOrWhiteSpace(request.firstName))
+                {
+                    user.FirstName = request.firstName;
+                }
+
+                if (!string.IsNullOrWhiteSpace(request.lastName))
+                {
+                    user.LastName = request.lastName;
+                }
+
+                // For address, allow null assignment to clear value if needed
+                if (request.address != null)
+                {
+                    user.Address = request.address;
+                }
+
                 var updatedUser = userRepository.Update(user);
                 await unitOfWork.SaveChangesAsync();
 

@@ -79,19 +79,21 @@ namespace LMSWebAppClean.Identity.Services
                 }
 
                 // Create UserDTO
-                var userDto = new UserDTO
+                /*var userDto = new UserDTO
                 {
                     Id = domainUser.Id,
                     Name = domainUser.Name,
                     Email = domainUser.Email,
                     Type = domainUser.Type
-                };
+                    FirstName = domainUser.FirstName,
+                    LastName = domainUser.LastName
+                };*/
 
                 // Generate JWT token
                 var token = tokenService.GenerateJwtToken(domainUser); // Remove "Bearer " prefix
                 var expiresAt = tokenService.GetTokenExpiration();
 
-                var loginResponse = new LoginDTO(userDto, token, expiresAt);
+                var loginResponse = new LoginDTO(domainUser, token, expiresAt);
                 return UserLoginResult.Success(loginResponse);
             }
             catch (Exception ex)

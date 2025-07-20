@@ -46,6 +46,31 @@ namespace LMSWebAppClean.Application.Usecase.Books.UpdateBook
                 errors.Add("Category must not exceed 50 characters.");
             }
 
+            if (!string.IsNullOrWhiteSpace(request.ISBN))
+            {
+                if (request.ISBN.Length < 10)
+                {
+                    errors.Add("ISBN must be at least 10 characters.");
+                }
+                else if (request.ISBN.Length > 20)
+                {
+                    errors.Add("ISBN must not exceed 20 characters.");
+                }
+            }
+
+            // Validate Synopsis (optional, but if provided, must be at least 10 and at most 1000 characters)
+            if (!string.IsNullOrWhiteSpace(request.Synopsis))
+            {
+                if (request.Synopsis.Length < 10)
+                {
+                    errors.Add("Synopsis must be at least 10 characters.");
+                }
+                else if (request.Synopsis.Length > 1000)
+                {
+                    errors.Add("Synopsis must not exceed 1000 characters.");
+                }
+            }
+
             var result = errors.Any() 
                 ? ValidationResult.Failure(errors) 
                 : ValidationResult.Success();

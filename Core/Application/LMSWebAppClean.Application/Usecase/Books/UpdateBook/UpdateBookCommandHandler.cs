@@ -38,6 +38,8 @@ namespace LMSWebAppClean.Application.Usecase.Books.UpdateBook
                 book.Author = request.Author;
                 book.PublicationYear = request.Year;
                 book.Category = request.Category;
+                book.ISBN = request.ISBN;
+                book.Synopsis = request.Synopsis;
 
                 var updatedBook = bookRepository.Update(book);
                 await unitOfWork.SaveChangesAsync();
